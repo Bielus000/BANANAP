@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap');
+
+:root {
+    --color-marro-bananap: rgba(120, 63, 4, 1);
+    --color-groc-bananap: rgba(255, 223, 153, 1);
+    --color-perfect-nana-bananap: rgba(253, 174, 0, 1);
+    --color-light-nana-bananap: rgba(255, 237, 197, 1);
+}
+
+.text-style-body-text {
+    font-size: 20px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-style: normal;
+    text-decoration: none;
+    text-transform: none;
+}
+
+.text-style-small-text {
+    font-size: 12px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    text-decoration: none;
+    text-transform: none;
+}
+
+.text-style-title-text {
+    font-size: 40px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-style: normal;
+    text-decoration: none;
+    text-transform: none;
+}
+
+.text-style-footer-button {
+	font-size: 22px;
+    font-family: 'Outfit', sans-serif;
+	font-weight: 600;
+	font-style: normal;
+	text-decoration: none;
+	text-transform: none;
+}
+
+.effect-style-spot-effect {
+    box-shadow: inset 0px 2.5px 0px rgba(0, 0, 0, 1), inset 0px 2px 2px rgba(0, 0, 0, 0.750), 0px 1px 1px rgba(0, 0, 0, 0.100);
+}
+
+.start-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(253, 174, 0, 0.35), transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(120, 63, 4, 0.25), transparent 45%),
+        var(--color-light-nana-bananap);
+    cursor: pointer;
+}
+
+.start-logo {
+    width: min(70vw, 560px);
+    height: auto;
+    filter: drop-shadow(0 10px 20px rgba(120, 63, 4, 0.35));
+}
+
+.start-text {
+    margin: 0;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: rgba(120, 63, 4, 0.9);
+    color: var(--color-groc-bananap);
+    font-size: 14px;
+    font-family: Outfit;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.page-top-home {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+}
+
+.page-top-home img {
+    width: 86px;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(120, 63, 4, 0.25));
+    transition: transform 0.2s ease;
+}
+
+.page-top-home:hover img,
+.page-top-home:focus-visible img {
+    transform: scale(1.05);
+}
+
+.arduino-btn {
+    top: 12px;
+    left: 12px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* FOOTER */
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-image: url("../media/Banana footer.png");
+    background-size: cover;
+    background-position: center;
+    clip-path: polygon(0 100%, 0 49%, 10% 53%, 20% 48%, 30% 52%, 40% 47%, 50% 51%, 60% 48%, 70% 52%, 80% 49%, 90% 53%, 100% 50%, 100% 100%);
+    padding: 100px 0 20px;
+    text-align: center;
+    z-index: 30;
+    overflow: visible;
+    isolation: isolate;
+}
+
+.footer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(253, 174, 0, 0.5);
+    z-index: 0;
+    pointer-events: none;
+}
+
+
+.footer-content {
+    color: var(--color-marro-bananap);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.footer-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+}
+
+.footer-button {
+    color: var(--color-marro-bananap);
+    text-decoration: none;
+    line-height: 1;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.footer-button:hover,
+.footer-button:focus-visible {
+    color: rgba(120, 63, 4, 0.8);
+    transform: translateY(-2px);
+}
+
+.footer-content p {
+    margin: 0;
+}
+
+@media (max-width: 700px) {
+    .footer-nav {
+        gap: 16px;
+    }
+
+    .footer-button {
+        font-size: 18px;
+    }
+}

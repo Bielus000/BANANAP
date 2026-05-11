@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html leng="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BANANAP</title>
+    <link rel="stylesheet" href="css/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.37/Tone.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #FFEDC5;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="start-screen" class="start-screen" role="button" tabindex="0" aria-label="Comencar experiència BANANAP">
+        <img src="media/Logo.png" alt="Logo BANANAP" class="start-logo">
+        <p class="text-style-title-text">Press the Buttons, Turn any Fader,</p>
+        <p class="text-style-title-text">& Pump Up the speakers</p>
+    </div>
+
+    <button id="btn" class="arduino-btn hidden" style="position:fixed; z-index:10">Connectar Arduino</button>
+
+    <script>
+        let dades = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // B1-B4, F1-F5
+        let botonsAntics = [0, 0, 0, 0];
+        let elements = [];
+
+        // Sons
+        const sons = [
+            new Tone.Player("https://tonejs.github.io/audio/drum-samples/kick.mp3").toDestination(),
+            new Tone.Player("https://tonejs.github.io/audio/drum-samples/snare.mp3").toDestination(),
+            new Tone.PolySynth().toDestination(),
+            new Tone.NoiseSynth().toDestination()
+        ];
+
+        // Filtre global controlat per un fader
+        const filter = new Tone.Filter(2000, "lowpass").toDestination();
+        sons[2].connect(filter);
+
+        const startScreen = document.getElementById('start-screen');
+        const btnArduino = document.getElementById('btn');
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            colorMode(HSB, 360, 100, 100, 1);
+            noLoop();
+        }
+
+        function draw() {
+            // Fader 1 controla el fons (estil Patatap que deixa ròssec)
+            let fonsOpacitat = map(dades[4], 0, 1023, 0.05, 0.5);
+            background(0, fonsOpacitat);
+
+            // Gestió de botons (Trigger quan canvien de 0 a 1)
+            for (let i = 0; i < 4; i++) {
+                if (dades[i] === 1 && botonsAntics[i] === 0) {
+                    dispararEfecte(i);
+                }
+                botonsAntics[i] = dades[i];
+            }
+
+            // Dibuixar i actualitzar elements visuals
+            for (let i = elements.length - 1; i >= 0; i--) {
+                elements[i].update();
+                elements[i].display();
+                if (elements[i].isDead()) elements.splice(i, 1);
+            }
+        }
+
+        function dispararEfecte(id) {
+            // Els faders modifiquen l'efecte en el moment del clic
+            let midaBase = map(dades[5], 0, 1023, 10, 200); // Fader 2: Mida
+            let colorHue = map(dades[6], 0, 1023, 0, 360); // Fader 3: Color
+
+            if (id === 0) { // CERCLE
+                sons[0].start();
+                elements.push(new Cercle(width / 2, height / 2, midaBase, colorHue));
+            }
+            else if (id === 1) { // LÍNIES
+                sons[1].start();
+                elements.push(new Linies(colorHue));
+            }
+            else if (id === 2) { // NOTA MUSICAL
+                let nota = map(dades[7], 0, 1023, 100, 800); // Fader 4: Pitch
+                sons[2].triggerAttackRelease(nota, "8n");
+                elements.push(new Particula(random(width), random(height), colorHue));
+            }
+            else if (id === 3) { // FLASH
+                sons[3].triggerAttackRelease("16n");
+                background(colorHue, 80, 100);
+            }
+        }
+
+        // --- CLASSES VISUALS ---
+        class Cercle {
+            constructor(x, y, m, h) { this.x = x; this.y = y; this.m = m; this.h = h; this.a = 1; }
+            update() { this.m += 10; this.a -= 0.02; }
+            display() { noFill(); stroke(this.h, 80, 100, this.a); strokeWeight(5); ellipse(this.x, this.y, this.m); }
+            isDead() { return this.a <= 0; }
+        }
+
+        class Linies {
+            constructor(h) { this.h = h; this.y = random(height); this.v = 20; this.a = 1; }
+            update() { this.y += this.v; this.a -= 0.02; }
+            display() { stroke(this.h, 80, 100, this.a); strokeWeight(20); line(0, this.y, width, this.y); }
+            isDead() { return this.a <= 0; }
+        }
+
+        class Particula {
+            constructor(x, y, h) { this.x = x; this.y = y; this.h = h; this.vx = random(-5, 5); this.vy = random(-5, 5); this.a = 1; }
+            update() { this.x += this.vx; this.y += this.vy; this.a -= 0.01; }
+            display() { fill(this.h, 80, 100, this.a); noStroke(); rect(this.x, this.y, 20, 20); }
+            isDead() { return this.a <= 0; }
+        }
+
+        function iniciarExperiencia() {
+            startScreen.style.display = 'none';
+            btnArduino.classList.remove('hidden');
+            loop();
+        }
+
+        startScreen.addEventListener('click', iniciarExperiencia);
+        startScreen.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                iniciarExperiencia();
+            }
+        });
+
+        // --- WEB SERIAL API ---
+        document.getElementById('btn').addEventListener('click', async () => {
+            await Tone.start();
+            const port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 });
+            const decoder = new TextDecoderStream();
+            port.readable.pipeTo(decoder.writable);
+            const reader = decoder.readable.getReader();
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (value) {
+                    let linies = value.split("\n");
+                    let ultimaDada = linies[linies.length - 2];
+                    if (ultimaDada) {
+                        let vals = ultimaDada.split(",");
+                        if (vals.length === 9) dades = vals.map(Number);
+                    }
+                }
+            }
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <nav class="footer-nav" aria-label="Enllaços de peu de pàgina">
+                <a class="text-style-footer-button" href="about.html">About</a>
+                <a class="text-style-footer-button" href="contact.html">Contact</a>
+                <a class="text-style-footer-button" href="suport.html">Suport</a>
+            </nav>
+            <p class="text-style-small-text">Created with love ©Bananap 2026. All rights reserved</p>
+        </div>
+    </footer>
+</body>
+
+</html>

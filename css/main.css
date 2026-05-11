@@ -55,13 +55,14 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: px;
+    gap: 6px;
     cursor: pointer;
 }
 
 .start-logo {
     width: min(70vw, 800px);
     height: auto;
+    transform: translateY(-70px);
 }
 
 .start-text {
@@ -78,11 +79,13 @@
 
 .start-screen .text-style-title-text {
     color: var(--color-marro-bananap);
+    margin: 0;
+    line-height: 1.05;
 }
 
 .page-top-home {
     position: fixed;
-    top: 16px;
+    top: 18px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 25;

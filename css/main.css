@@ -55,18 +55,13 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 20px;
-    background:
-        radial-gradient(circle at 20% 20%, rgba(253, 174, 0, 0.35), transparent 45%),
-        radial-gradient(circle at 80% 80%, rgba(120, 63, 4, 0.25), transparent 45%),
-        var(--color-light-nana-bananap);
+    gap: px;
     cursor: pointer;
 }
 
 .start-logo {
-    width: min(70vw, 560px);
+    width: min(70vw, 800px);
     height: auto;
-    filter: drop-shadow(0 10px 20px rgba(120, 63, 4, 0.35));
 }
 
 .start-text {
@@ -79,6 +74,10 @@
     font-family: Outfit;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.start-screen .text-style-title-text {
+    color: var(--color-marro-bananap);
 }
 
 .page-top-home {
@@ -160,6 +159,10 @@
     text-decoration: none;
     line-height: 1;
     transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.footer-nav a {
+    color: var(--color-marro-bananap);
 }
 
 .footer-button:hover,

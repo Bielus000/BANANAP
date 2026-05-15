@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html leng="en">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -14,147 +14,62 @@
             overflow: hidden;
             background: #FFEDC5;
         }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .connect-btn {
+            margin-top: 30px;
+            font-size: 24px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 3px solid rgba(120, 63, 4, 0.8);
+            cursor: pointer;
+            color: rgba(120, 63, 4, 1);
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+            z-index: 20;
+        }
+
+        .connect-btn:hover {
+            background: rgba(120, 63, 4, 0.1);
+            transform: scale(1.05);
+        }
+
+        #connection-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 15;
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            color: rgba(120, 63, 4, 0.5);
+            pointer-events: none;
+        }
     </style>
 </head>
 
 <body>
-    <div id="start-screen" class="start-screen" role="button" tabindex="0" aria-label="Comencar experiència BANANAP">
+    <div id="start-screen" class="start-screen">
         <img src="media/Logo.png" alt="Logo BANANAP" class="start-logo">
-        <p class="text-style-title-text">Press the Buttons, Turn any Fader</p>
-        <p class="text-style-title-text">& Pump Up the speakers</p>
+        <p class="text-style-title-text">Connect Arduino & Pump Up the speakers</p>
+        <button id="connect-btn" class="connect-btn text-style-footer-button">Connect Arduino</button>
     </div>
 
-    <button id="btn" class="arduino-btn hidden" style="position:fixed; z-index:10">Connectar Arduino</button>
-
-    <script>
-        let dades = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // B1-B4, F1-F5
-        let botonsAntics = [0, 0, 0, 0];
-        let elements = [];
-
-        // Sons
-        const sons = [
-            new Tone.Player("https://tonejs.github.io/audio/drum-samples/kick.mp3").toDestination(),
-            new Tone.Player("https://tonejs.github.io/audio/drum-samples/snare.mp3").toDestination(),
-            new Tone.PolySynth().toDestination(),
-            new Tone.NoiseSynth().toDestination()
-        ];
-
-        // Filtre global controlat per un fader
-        const filter = new Tone.Filter(2000, "lowpass").toDestination();
-        sons[2].connect(filter);
-
-        const startScreen = document.getElementById('start-screen');
-        const btnArduino = document.getElementById('btn');
-
-        function setup() {
-            createCanvas(windowWidth, windowHeight);
-            colorMode(HSB, 360, 100, 100, 1);
-            noLoop();
-        }
-
-        function draw() {
-            // Fader 1 controla el fons (estil Patatap que deixa ròssec)
-            let fonsOpacitat = map(dades[4], 0, 1023, 0.05, 0.5);
-            background(0, fonsOpacitat);
-
-            // Gestió de botons (Trigger quan canvien de 0 a 1)
-            for (let i = 0; i < 4; i++) {
-                if (dades[i] === 1 && botonsAntics[i] === 0) {
-                    dispararEfecte(i);
-                }
-                botonsAntics[i] = dades[i];
-            }
-
-            // Dibuixar i actualitzar elements visuals
-            for (let i = elements.length - 1; i >= 0; i--) {
-                elements[i].update();
-                elements[i].display();
-                if (elements[i].isDead()) elements.splice(i, 1);
-            }
-        }
-
-        function dispararEfecte(id) {
-            // Els faders modifiquen l'efecte en el moment del clic
-            let midaBase = map(dades[5], 0, 1023, 10, 200); // Fader 2: Mida
-            let colorHue = map(dades[6], 0, 1023, 0, 360); // Fader 3: Color
-
-            if (id === 0) { // CERCLE
-                sons[0].start();
-                elements.push(new Cercle(width / 2, height / 2, midaBase, colorHue));
-            }
-            else if (id === 1) { // LÍNIES
-                sons[1].start();
-                elements.push(new Linies(colorHue));
-            }
-            else if (id === 2) { // NOTA MUSICAL
-                let nota = map(dades[7], 0, 1023, 100, 800); // Fader 4: Pitch
-                sons[2].triggerAttackRelease(nota, "8n");
-                elements.push(new Particula(random(width), random(height), colorHue));
-            }
-            else if (id === 3) { // FLASH
-                sons[3].triggerAttackRelease("16n");
-                background(colorHue, 80, 100);
-            }
-        }
-
-        // --- CLASSES VISUALS ---
-        class Cercle {
-            constructor(x, y, m, h) { this.x = x; this.y = y; this.m = m; this.h = h; this.a = 1; }
-            update() { this.m += 10; this.a -= 0.02; }
-            display() { noFill(); stroke(this.h, 80, 100, this.a); strokeWeight(5); ellipse(this.x, this.y, this.m); }
-            isDead() { return this.a <= 0; }
-        }
-
-        class Linies {
-            constructor(h) { this.h = h; this.y = random(height); this.v = 20; this.a = 1; }
-            update() { this.y += this.v; this.a -= 0.02; }
-            display() { stroke(this.h, 80, 100, this.a); strokeWeight(20); line(0, this.y, width, this.y); }
-            isDead() { return this.a <= 0; }
-        }
-
-        class Particula {
-            constructor(x, y, h) { this.x = x; this.y = y; this.h = h; this.vx = random(-5, 5); this.vy = random(-5, 5); this.a = 1; }
-            update() { this.x += this.vx; this.y += this.vy; this.a -= 0.01; }
-            display() { fill(this.h, 80, 100, this.a); noStroke(); rect(this.x, this.y, 20, 20); }
-            isDead() { return this.a <= 0; }
-        }
-
-        function iniciarExperiencia() {
-            startScreen.style.display = 'none';
-            btnArduino.classList.remove('hidden');
-            loop();
-        }
-
-        startScreen.addEventListener('click', iniciarExperiencia);
-        startScreen.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                iniciarExperiencia();
-            }
-        });
-
-        // --- WEB SERIAL API ---
-        document.getElementById('btn').addEventListener('click', async () => {
-            await Tone.start();
-            const port = await navigator.serial.requestPort();
-            await port.open({ baudRate: 115200 });
-            const decoder = new TextDecoderStream();
-            port.readable.pipeTo(decoder.writable);
-            const reader = decoder.readable.getReader();
-
-            while (true) {
-                const { value, done } = await reader.read();
-                if (value) {
-                    let linies = value.split("\n");
-                    let ultimaDada = linies[linies.length - 2];
-                    if (ultimaDada) {
-                        let vals = ultimaDada.split(",");
-                        if (vals.length === 9) dades = vals.map(Number);
-                    }
-                }
-            }
-        });
-    </script>
+    <div id="connection-status">Not connected</div>
 
     <footer class="footer">
         <div class="footer-content">
@@ -166,6 +81,359 @@
             <p class="text-style-small-text">Created with love ©Bananap 2026. All rights reserved</p>
         </div>
     </footer>
+
+    <script>
+        let elements = [];
+        let experienciaIniciada = false;
+        let toneStarted = false;
+
+        let bgCol;
+        let shapeCol;
+
+        // --- ARDUINO DATA ---
+        let faders = [512, 0, 512, 0, 0]; // F1:Filter, F2:Palette, F3:Scale, F4:Reverb, F5:Thickness
+        let buttons = [0, 0, 0, 0];
+        let prevButtons = [0, 0, 0, 0];
+        let port;
+        let reader;
+        let inputBuffer = '';
+
+        // --- PALETA BANANAP ---
+        const palettes = [
+            { bg: [41, 23, 100], fg: [30, 97, 47] },
+            { bg: [41, 23, 100], fg: [321, 80, 71] },
+            { bg: [41, 23, 100], fg: [237, 70, 81] },
+            { bg: [41, 40, 100], fg: [6, 81, 100] },
+            { bg: [41, 40, 100], fg: [31, 80, 21] },
+            { bg: [186, 50, 96], fg: [30, 97, 47] },
+            { bg: [186, 50, 96], fg: [6, 81, 100] },
+            { bg: [72, 68, 98], fg: [321, 80, 71] },
+            { bg: [72, 68, 98], fg: [237, 70, 81] },
+            { bg: [30, 97, 47], fg: [41, 100, 99] },
+            { bg: [31, 80, 21], fg: [186, 50, 96] },
+            { bg: [237, 70, 81], fg: [72, 68, 98] },
+            { bg: [321, 80, 71], fg: [41, 100, 99] },
+            { bg: [68, 18, 67], fg: [25, 91, 100] },
+            { bg: [6, 81, 100], fg: [41, 23, 100] }
+        ];
+        let currentPalette = 0;
+
+        // --- GLOBAL AUDIO EFFECTS ---
+        let masterFilter;
+        let masterReverb;
+        let sound0, sound1, sound2, sound3;
+
+        function setupAudio() {
+            // Setup global effects
+            masterFilter = new Tone.Filter({ type: "lowpass", frequency: 20000 }).toDestination();
+            masterReverb = new Tone.Reverb({ decay: 2.0, preDelay: 0.01 }).connect(masterFilter);
+
+            // Generate Reverb IR
+            masterReverb.generate();
+
+            // Setup 4 distinct sounds for the 4 buttons routing to Reverb
+            // Sound 0: Deep Kick
+            sound0 = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 6, envelope: { attack: 0.001, decay: 0.25, sustain: 0, release: 0.1 } }).connect(masterReverb);
+            // Sound 1: Snare/Hat
+            sound1 = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.05 } }).connect(masterReverb);
+            // Sound 2: Pluck
+            sound2 = new Tone.PluckSynth({ attackNoise: 2, dampening: 3500, resonance: 0.95 }).connect(masterReverb);
+            // Sound 3: FM Bell
+            sound3 = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 8, envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 }, modulation: { type: 'square' } }).connect(masterReverb);
+        }
+
+        // --- DOM ---
+        const startScreen = document.getElementById('start-screen');
+        const connectBtn = document.getElementById('connect-btn');
+        const footer = document.querySelector('.footer');
+        const statusText = document.getElementById('connection-status');
+
+        // --- SERIAL CONNECTION ---
+        async function connectSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 }); // Canviat a 115200
+
+                if (!toneStarted) {
+                    await Tone.start();
+                    setupAudio();
+                    toneStarted = true;
+                }
+
+                startScreen.style.display = 'none';
+                if (footer) footer.classList.add('footer--hidden');
+                experienciaIniciada = true;
+                statusText.innerText = "Arduino Connected";
+                loop();
+
+                const textDecoder = new TextDecoderStream();
+                const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                reader = textDecoder.readable.getReader();
+
+                readLoop();
+            } catch (err) {
+                console.error("Connection error:", err);
+                alert("Error: " + err.message);
+            }
+        }
+
+        connectBtn.addEventListener('click', connectSerial);
+
+        async function readLoop() {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    reader.releaseLock();
+                    break;
+                }
+                if (value) {
+                    // Depuració: Mostrar immediatament si arriba ALGUN tipus de dada
+                    if (!statusText.innerText.startsWith("Rebent:")) {
+                        statusText.innerText = "Dades crues rebent-se... (esperant salt de línia)";
+                    }
+
+                    inputBuffer += value;
+                    let lines = inputBuffer.split('\n');
+                    // Process all complete lines
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        processArduinoData(lines[i].trim());
+                    }
+                    // Keep incomplete part in buffer
+                    inputBuffer = lines[lines.length - 1];
+                }
+            }
+        }
+
+        function processArduinoData(line) {
+            if (!line) return;
+
+            // Per depurar: mostrar la línia rebuda al panell i a la consola
+            statusText.innerText = "Rebent: " + line;
+
+            try {
+                // L'Arduino està enviant un objecte JSON com: {"f":[0,0,0,0,0],"b":[0,0,1,0]}
+                const data = JSON.parse(line);
+
+                if (data.f && data.f.length >= 5) {
+                    for (let i = 0; i < 5; i++) {
+                        faders[i] = parseInt(data.f[i]);
+                    }
+                }
+
+                if (data.b && data.b.length >= 4) {
+                    for (let i = 0; i < 4; i++) {
+                        let currentBtn = parseInt(data.b[i]);
+                        if (currentBtn === 1 && prevButtons[i] === 0) {
+                            dispararEfecte(i);
+                        }
+                        prevButtons[i] = currentBtn;
+                        buttons[i] = currentBtn;
+                    }
+                }
+            } catch (e) {
+                // Si la línia no és JSON vàlid (per exemple si es talla a mig enviar), l'ignorem
+                // console.log("Format no vàlid:", line);
+            }
+        }
+
+        // --- P5 ---
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            colorMode(HSB, 360, 100, 100, 1);
+            bgCol = [...palettes[0].bg];
+            shapeCol = [...palettes[0].fg];
+            noLoop();
+        }
+
+        function draw() {
+            if (!experienciaIniciada) return;
+
+            // --- AUDIO PARAMETERS CONTROL (Faders 1 & 4) ---
+            // Fader 1 (0): Lowpass Filter Cutoff
+            let cutoff = map(faders[0], 0, 1023, 200, 15000);
+            if (masterFilter) masterFilter.frequency.rampTo(cutoff, 0.1);
+
+            // Fader 4 (3): Reverb Wet Amount
+            let revWet = map(faders[3], 0, 1023, 0, 1);
+            if (masterReverb) masterReverb.wet.value = revWet;
+
+            // --- VISUAL PARAMETERS CONTROL (Faders 2, 3, 5) ---
+            // Fader 2 (1): Palette Selection
+            let targetPalette = floor(map(faders[1], 0, 1024, 0, palettes.length));
+            if (targetPalette >= palettes.length) targetPalette = palettes.length - 1;
+            if (currentPalette !== targetPalette) {
+                currentPalette = targetPalette;
+                bgCol = [...palettes[currentPalette].bg];
+                shapeCol = [...palettes[currentPalette].fg];
+            }
+
+            // Fader 3 (2): Visual Scale Multiplier
+            let scaleMult = map(faders[2], 0, 1023, 0.5, 3.0);
+
+            // Fader 5 (4): Stroke Thickness Multiplier
+            let thickMult = map(faders[4], 0, 1023, 0.5, 3.0);
+
+            background(bgCol[0], bgCol[1], bgCol[2]);
+
+            // Dibuixa els elements amb scale() i transmet el multiplicador de gruix
+            for (let i = elements.length - 1; i >= 0; i--) {
+                elements[i].update();
+
+                push();
+                translate(width / 2, height / 2);
+                scale(scaleMult);
+                translate(-width / 2, -height / 2);
+
+                elements[i].display(thickMult);
+                pop();
+
+                if (elements[i].isDead()) elements.splice(i, 1);
+            }
+
+            // Gestionar footer
+            if (windowHeight - mouseY < 120) footer.classList.remove('footer--hidden');
+            else footer.classList.add('footer--hidden');
+        }
+
+        function dispararEfecte(botoId) {
+            const h = shapeCol[0], s = shapeCol[1], b = shapeCol[2];
+            const cx = width / 2, cy = height / 2;
+
+            try {
+                if (botoId === 0) {
+                    sound0.triggerAttackRelease('C1', '8n');
+                    elements.push(new Shrink(cx, cy, h, 200));
+                    elements.push(new Flash(h, s, b));
+                } else if (botoId === 1) {
+                    sound1.triggerAttackRelease('16n');
+                    for (let i = 0; i < 8; i++) elements.push(new RadLine(cx, cy, h, i * PI / 4, 8));
+                    elements.push(new ParBars(h, false, 3, 80));
+                } else if (botoId === 2) {
+                    sound2.triggerAttack('C4');
+                    elements.push(new Ring(cx, cy, h, 24, 6));
+                    elements.push(new Diamond(cx, cy, h, true));
+                } else if (botoId === 3) {
+                    sound3.triggerAttackRelease('A5', '16n');
+                    elements.push(new ZigZag(h));
+                    for (let i = 0; i < 12; i++) elements.push(new Dot(cx, cy, h, random(10, 20), random(3, 8)));
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        // ---- VISUAL CLASSES ----
+
+        class Ring {
+            constructor(x, y, h, sw, spd) {
+                this.x = x; this.y = y; this.h = h; this.sw = sw; this.r = 0; this.a = 1; this.spd = spd;
+            }
+            update() { this.r += this.spd; this.a -= 0.025; }
+            display(thick) {
+                noFill(); stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(this.sw * thick);
+                ellipse(this.x, this.y, this.r * 2);
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        class Shrink {
+            constructor(x, y, h, sz) {
+                this.x = x; this.y = y; this.h = h; this.sz = sz; this.a = 0.9;
+            }
+            update() { this.sz -= 4; this.a -= 0.03; }
+            display(thick) {
+                if (this.sz > 0) { noStroke(); fill(this.h, shapeCol[1], shapeCol[2], this.a); ellipse(this.x, this.y, this.sz); }
+            }
+            isDead() { return this.a <= 0 || this.sz <= 0; }
+        }
+
+        class Dot {
+            constructor(x, y, h, sz, spd) {
+                this.h = h; this.sz = sz; this.a = 1;
+                const ang = random(TWO_PI);
+                this.x = x; this.y = y; this.vx = cos(ang) * spd; this.vy = sin(ang) * spd;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.a -= 0.03; this.vx *= 0.96; this.vy *= 0.96; }
+            display(thick) {
+                noStroke(); fill(this.h, shapeCol[1], shapeCol[2], this.a); ellipse(this.x, this.y, this.sz);
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        class RadLine {
+            constructor(x, y, h, ang, sw) {
+                this.x = x; this.y = y; this.h = h; this.ang = ang; this.sw = sw; this.len = 0; this.a = 1;
+            }
+            update() { this.len += 10; this.a -= 0.03; }
+            display(thick) {
+                stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(this.sw * thick);
+                const ex = this.x + cos(this.ang) * this.len, ey = this.y + sin(this.ang) * this.len;
+                line(this.x, this.y, ex, ey);
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        class Diamond {
+            constructor(x, y, h, rot) {
+                this.x = x; this.y = y; this.h = h; this.rot = rot; this.sz = 0; this.a = 1; this.angle = 0;
+            }
+            update() { this.sz += 6; this.a -= 0.025; if (this.rot) this.angle += 0.04; }
+            display(thick) {
+                push(); translate(this.x, this.y); rotate(this.angle);
+                noFill(); stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(8 * thick);
+                const s = this.sz;
+                quad(0, -s, s, 0, 0, s, -s, 0); pop();
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        class ParBars {
+            constructor(h, vert, count, spacing) {
+                this.h = h; this.vert = vert; this.a = 1; this.bars = [];
+                const mid = vert ? width / 2 : height / 2;
+                for (let i = 0; i < count; i++) {
+                    this.bars.push(mid + (i - floor(count / 2)) * spacing);
+                }
+            }
+            update() { this.a -= 0.03; }
+            display(thick) {
+                stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(10 * thick);
+                for (const pos of this.bars) {
+                    if (this.vert) line(pos, 0, pos, height);
+                    else line(0, pos, width, pos);
+                }
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        class ZigZag {
+            constructor(h) {
+                this.h = h; this.a = 1; this.progress = 0;
+            }
+            update() { this.progress += 15; this.a -= 0.025; }
+            display(thick) {
+                noFill(); stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(10 * thick);
+                beginShape();
+                const amp = 40, freq = 50, cy = height / 2;
+                for (let x = 0; x < min(this.progress, width); x += 5) {
+                    vertex(x, cy + sin(x / freq * TWO_PI) * amp);
+                }
+                endShape();
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        class Flash {
+            constructor(h, s, b) { this.h = h; this.s = s; this.b = b; this.a = 0.7; }
+            update() { this.a -= 0.07; }
+            display(thick) {
+                noStroke(); fill(this.h, this.s, this.b, this.a); rect(0, 0, width, height);
+            }
+            isDead() { return this.a <= 0; }
+        }
+
+        function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+    </script>
     <script src="js/main.js"></script>
 </body>
 

@@ -8,19 +8,59 @@
     <link rel="stylesheet" href="css/main.css">
 </head>
 
-<body style="margin:0; background:#FFEDC5; font-family:Outfit, sans-serif;">
+<body style="margin:0; background:#FFEDC5; font-family:Outfit, sans-serif; overflow-y: auto;">
     <a class="page-top-home" href="index.html" aria-label="Tornar a la pagina principal">
         <img src="media/Logo.png" alt="BANANAP Home">
     </a>
 
-    <main style="min-height:calc(100vh - 180px); display:flex; align-items:center; justify-content:center; padding:40px; text-align:center;">
-        <section>
-            <h1 class="text-style-title-text" style="margin:0 0 12px 0; color:#783F04;">Suport BANANAP</h1>
-            <p class="text-style-body-text" style="margin:0; color:#783F04;">Aqui pots afegir preguntes frequents i ajuda tecnica.</p>
-        </section>
+    <main class="page-section">
+        <h1 class="text-style-title-text section-title">Manual d'Instruccions</h1>
+        <p class="text-style-body-text section-desc">
+            Com funciona BANANAP? Aprèn a treure-li el màxim profit al teu controlador Arduino per crear la millor
+            experiència audiovisual.
+        </p>
+
+        <div class="support-grid">
+            <div class="support-card">
+                <h3 class="text-style-title-text card-title">La Consola Física</h3>
+                <ul class="text-style-body-text support-list">
+                    <li><strong>Botó 1:</strong> Kick (Bombo) i esclat de llum (Flash).</li>
+                    <li><strong>Botó 2:</strong> Snare (Caixa) i línies radials.</li>
+                    <li><strong>Botó 3:</strong> Pluck i expansió d'anells.</li>
+                    <li><strong>Botó 4:</strong> FM Bell i patró de punts ziga-zaga.</li>
+                    <li><strong>Fader 1:</strong> Filtre de so (Lowpass filter cutoff).</li>
+                    <li><strong>Fader 2:</strong> Selector de paletes de color (15 paletes diferents).</li>
+                    <li><strong>Fader 3:</strong> Mida de les formes visuals (Escala global).</li>
+                    <li><strong>Fader 4:</strong> Reverb global (Efecte de sala).</li>
+                    <li><strong>Fader 5:</strong> Gruix de les línies visuals dibuixades.</li>
+                </ul>
+            </div>
+
+            <div class="support-card">
+                <h3 class="text-style-title-text card-title">Resolució de Problemes</h3>
+                <div class="faq-item">
+                    <strong class="text-style-body-text">El botó "Connect Arduino" no fa res?</strong>
+                    <p class="text-style-small-text faq-text">Assegurat d'estar fent servir els navegadors Google Chrome
+                        o Microsoft Edge en PC o Mac. Safari i Firefox no són compatibles amb la tecnologia Web Serial.
+                    </p>
+                </div>
+                <div class="faq-item">
+                    <strong class="text-style-body-text">Està connectat però no reacciona?</strong>
+                    <p class="text-style-small-text faq-text">Comprova que el teu Arduino estigui funcionant a la
+                        mateixa velocitat que la web (115200 bauds). També verifica que el cable USB permeti transmissió
+                        de dades i no només càrrega d'energia.</p>
+                </div>
+                <div class="faq-item">
+                    <strong class="text-style-body-text">Sona distorsionat o va molt lent?</strong>
+                    <p class="text-style-small-text faq-text">El sistema de síntesi de so en temps real requereix
+                        capacitat de processament. Tanca altres pestanyes pesades i assegurat que el teu navegador
+                        utilitza l'acceleració per maquinari.</p>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <footer class="footer">
+    <footer class="footer static-footer">
         <div class="footer-content">
             <nav class="footer-nav" aria-label="Enllaços de peu de pàgina">
                 <a class="text-style-footer-button" href="about.html">About</a>

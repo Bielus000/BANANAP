@@ -106,7 +106,39 @@
         let startTimePlants = 0;
         let maxTimePlants = 12000; // 12 seconds
 
-        // --- MINIGAME 2: PEELING ---
+        // --- MINIGAME 2: PALM TREES ---
+        let palmSprites = [];      // [[1.1, 1.2], [2.1, 2.2], [3.1, 3.2], [4.1, 4.2]]
+        let palmBananaSprites = []; // [5.1, 5.2, 5.3, 5.4]
+        let palmHits = [0, 0, 0, 0];       // hits per palmera
+        let palmDropped = [false, false, false, false]; // si ja ha caigut el plàtan
+        let palmDisabled = [false, false, false, false]; // botó desactivat
+        let palmShaking = [false, false, false, false]; // animació vibració activa
+        let palmShakeTimer = [0, 0, 0, 0]; // temps inici shake
+        let palmShakeDuration = 400; // ms de vibració
+        let palmFallingBananas = []; // plàtans caient
+        let palmBananasCollected = 0; // comptador global
+        let palmWinTime = 0; // temps de victòria (per esperar 4s)
+        let palmPositionsGame = [
+            { x: 0.8, y: 0.55 },
+            { x: 0.2, y: 0.55 },
+            { x: 0.35, y: 0.55 },
+            { x: 0.7, y: 0.55 }
+        ];
+
+        // --- MINIGAME 2.5: CATCH ---
+        let handSprites = [];
+        let bananaRotSprites = [];
+        let fallingBananas = [];
+        let catchScore = 0;
+        let catchLives = 3;
+        let catchTargetScore = 4;
+        let startTimeCatch = 0;
+        let maxTimeCatch = 20000; // 20 seconds
+        let lastBananaSpawn = 0;
+        let bananaSpawnInterval = 1200; // ms
+        let catchTotalSpawned = 0;
+
+        // --- MINIGAME 3: PEELING ---
         let peeledBananas = 0;
         let peelPhase = 0;
         const targetSequence = [0, 1, 2];
@@ -117,6 +149,7 @@
         let bounceTimer = 0;
         let peelSprites = [];
         let counterSprites = [];
+        let counterSpritesCatch = []; // Counter sprites for CATCH minigame
         let countdownSprites = []; // 10s, 8s, 6s, 4s, 2s, 0s
         let expSprites = []; // explosion animation
         let explanationSprites = []; // explanation animation
@@ -280,7 +313,33 @@
                 loadImage('media/Minigame1/4.png')
             ];
 
-            // Minigame 2: Peeling
+            // Minigame 2: Palm Trees
+            palmSprites = [
+                [loadImage('media/Minigame2/1.1.png'), loadImage('media/Minigame2/1.2.png')],
+                [loadImage('media/Minigame2/2.1.png'), loadImage('media/Minigame2/2.2.png')],
+                [loadImage('media/Minigame2/3.1.png'), loadImage('media/Minigame2/3.2.png')],
+                [loadImage('media/Minigame2/4.1.png'), loadImage('media/Minigame2/4.2.png')]
+            ];
+            palmBananaSprites = [
+                loadImage('media/Minigame2/5.1.png'),
+                loadImage('media/Minigame2/5.2.png'),
+                loadImage('media/Minigame2/5.3.png'),
+                loadImage('media/Minigame2/5.4.png')
+            ];
+
+            // Minigame 2.5: Catch
+            handSprites = [
+                loadImage('media/Minigame2.5/1.1.png'),
+                loadImage('media/Minigame2.5/1.2.png')
+            ];
+            bananaRotSprites = [
+                loadImage('media/Minigame2.5/2.1.png'),
+                loadImage('media/Minigame2.5/2.2.png'),
+                loadImage('media/Minigame2.5/2.3.png'),
+                loadImage('media/Minigame2.5/2.4.png')
+            ];
+
+            // Minigame 3: Peeling
             peelSprites = [
                 [loadImage('media/game3/1.1.png'), loadImage('media/game3/1.1.png')],
                 [loadImage('media/game3/2.1.png'), loadImage('media/game3/2.2.png')],
@@ -300,6 +359,15 @@
                     loadImage('media/BananaCounter/4.5.png'),
                     loadImage('media/BananaCounter/4.6.png')
                 ]
+            ];
+
+            // Counter sprites for CATCH minigame
+            counterSpritesCatch = [
+                [loadImage('media/contador/0.1.png'), loadImage('media/contador/0.2.png')],
+                [loadImage('media/contador/1.1.png'), loadImage('media/contador/1.2.png')],
+                [loadImage('media/contador/2.1.png'), loadImage('media/contador/2.2.png')],
+                [loadImage('media/contador/3.1.png'), loadImage('media/contador/3.2.png')],
+                [loadImage('media/contador/4.1.png'), loadImage('media/contador/4.2.png')]
             ];
 
             // Countdown sprites: 10s, 8s, 6s, 4s, 2s, 0s
@@ -436,7 +504,258 @@
                 text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
 
                 // ============================
-                // MINIGAME 2: PEELING
+                // MINIGAME 2.5: CATCH
+                // ============================
+            } else if (gameState === "MINIGAME_CATCH") {
+                background('#FFDF99');
+
+                // Initialize timer on first frame
+                if (startTimeCatch === 0) {
+                    startTimeCatch = millis();
+                }
+
+                // Check if 15 seconds have passed and restart
+                if (millis() - startTimeCatch > 15000) {
+                    gameState = "MINIGAME_CATCH";
+                    catchScore = 0;
+                    catchLives = 3;
+                    fallingBananas = [];
+                    startTimeCatch = 0;
+                    lastBananaSpawn = 0;
+                    catchTotalSpawned = 0;
+                }
+
+                // Spawn bananas (max 4)
+                if (catchTotalSpawned < 4 && millis() - lastBananaSpawn > bananaSpawnInterval) {
+                    fallingBananas.push({
+                        x: random(100, width - 100),
+                        y: -50,
+                        speed: random(2, 5),
+                        rotFrame: floor(random(4))
+                    });
+                    lastBananaSpawn = millis();
+                    catchTotalSpawned++;
+                }
+
+                // Hand position from fader 1
+                let handX = map(faders[0], 0, 1023, 50, width - 50);
+                let handY = height - 100;
+                let handIdx = buttons[0] === 1 ? 1 : 0; // 1.2 tancat si Botó 1 premut
+                let handW = handSprites[handIdx].width * 0.1;
+                let handH = handSprites[handIdx].height * 0.1;
+
+                // Update and draw falling bananas
+                let bananasToRemove = [];
+                let catchThisFrame = 0;
+
+                for (let i = 0; i < fallingBananas.length; i++) {
+                    let b = fallingBananas[i];
+                    b.y += b.speed;
+                    b.rotFrame = floor((millis() / 150) % 4);
+
+                    let bW = bananaRotSprites[0].width * 0.1;
+                    let bH = bananaRotSprites[0].height * 0.1;
+
+                    let shouldRemove = false;
+
+                    // Check collision with hands (only if closed)
+                    if (buttons[0] === 1 && !shouldRemove) {
+                        let dx = abs(b.x - handX);
+                        let dy = abs(b.y - handY);
+                        if (dx < (handW * 0.5 + bW) / 2 && dy < (handH * 0.5 + bH) / 2) {
+                            catchScore++;
+                            catchThisFrame++;
+                            shouldRemove = true;
+                        }
+                    }
+
+                    // Banana fell off screen
+                    if (b.y > height + 50 && !shouldRemove) {
+                        catchLives--;
+                        sound0.triggerAttackRelease('C1', '8n');
+                        shouldRemove = true;
+                    }
+
+                    if (shouldRemove) {
+                        bananasToRemove.push(i);
+                    } else {
+                        // Draw banana
+                        imageMode(CENTER);
+                        image(bananaRotSprites[b.rotFrame], b.x, b.y, bW, bH);
+                    }
+                }
+
+                // Play sound only once for caught bananas
+                if (catchThisFrame > 0) {
+                    sound3.triggerAttackRelease('A5', '16n');
+                }
+
+                // Remove bananas in reverse order to maintain correct indices
+                for (let i = bananasToRemove.length - 1; i >= 0; i--) {
+                    fallingBananas.splice(bananasToRemove[i], 1);
+                }
+
+                // Draw hands
+                imageMode(CENTER);
+                image(handSprites[handIdx], handX, handY, handW, handH);
+
+                // Check win/lose
+                if (catchScore >= catchTargetScore) {
+                    gameState = "WIN_SCREEN_CATCH";
+                } else if (catchLives <= 0) {
+                    gameState = "LOSE_SCREEN_CATCH";
+                }
+
+                // Draw counter animation
+                let counterIdx = min(catchScore, 4);
+                let counterFrames = counterSpritesCatch[counterIdx];
+                if (counterFrames && counterFrames.length > 0) {
+                    let counterFrame = floor((millis() / 300) % counterFrames.length);
+                    let sprite = counterFrames[counterFrame];
+                    if (sprite) {
+                        imageMode(CENTER);
+                        let w = sprite.width * 0.08;
+                        let h = sprite.height * 0.08;
+                        image(sprite, width / 2, 140, w, h);
+                    }
+                }
+
+                // Draw lives
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(RIGHT, TOP);
+                textSize(28);
+                text("Vides: " + catchLives, width - 30, 30);
+
+            } else if (gameState === "WIN_SCREEN_CATCH") {
+                background('#FFDF99');
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                text("PLÀTANS ATRAPATS!", width / 2, height / 2 - 50);
+                textSize(24);
+                text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
+
+            } else if (gameState === "LOSE_SCREEN_CATCH") {
+                background('#FFDF99');
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                text("HAS PERDUT!", width / 2, height / 2 - 50);
+                textSize(24);
+                text("Atrapats: " + catchScore + "/" + catchTargetScore, width / 2, height / 2 + 20);
+                text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 60);
+
+                // ============================
+                // MINIGAME 2: PALM TREES
+                // ============================
+            } else if (gameState === "MINIGAME_PALMTREES") {
+                background('#FFDF99');
+
+                imageMode(CENTER);
+                let palmScale = 0.22;
+
+                for (let i = 0; i < 4; i++) {
+                    let px = width * palmPositionsGame[i].x;
+                    let py = height * palmPositionsGame[i].y;
+
+                    // Determine frame: shaking alternates 0/1, idle is 0
+                    let frameIdx = 0;
+                    if (palmShaking[i]) {
+                        let elapsed = millis() - palmShakeTimer[i];
+                        if (elapsed < palmShakeDuration) {
+                            frameIdx = floor((millis() / 60) % 2); // rapid alternation
+                        } else {
+                            palmShaking[i] = false;
+                        }
+                    }
+
+                    // Draw palm tree
+                    let spr = palmSprites[i][frameIdx];
+                    if (spr) {
+                        image(spr, px, py, spr.width * palmScale, spr.height * palmScale);
+                    }
+
+                    // Draw hit counter below palm
+                    if (!palmDisabled[i]) {
+                        fill('rgba(120, 63, 4, 0.7)');
+                        noStroke();
+                        textAlign(CENTER, TOP);
+                        textSize(20);
+                        text(palmHits[i] + " / 5", px, py + 120);
+                    } else {
+                        fill('rgba(120, 63, 4, 0.4)');
+                        noStroke();
+                        textAlign(CENTER, TOP);
+                        textSize(20);
+                        text("✓", px, py + 120);
+                    }
+                }
+
+                // Update and draw falling bananas
+                for (let i = palmFallingBananas.length - 1; i >= 0; i--) {
+                    let fb = palmFallingBananas[i];
+                    fb.y += fb.speed;
+                    fb.speed += 0.3; // gravity
+                    fb.animFrame = floor((millis() / 150) % 4);
+
+                    let bSpr = palmBananaSprites[fb.animFrame];
+                    if (bSpr) {
+                        imageMode(CENTER);
+                        let bScale = 0.06;
+                        image(bSpr, fb.x, fb.y, bSpr.width * bScale, bSpr.height * bScale);
+                    }
+
+                    // Remove when off screen
+                    if (fb.y > height + 100) {
+                        palmFallingBananas.splice(i, 1);
+                    }
+                }
+
+                // Title
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, TOP);
+                textSize(28);
+                text("Pica les palmeres! (5 cops cadascuna)", width / 2, 30);
+
+                // Banana counter
+                textAlign(CENTER, BOTTOM);
+                textSize(24);
+                text("Plàtans: " + palmBananasCollected + " / 4", width / 2, height - 30);
+
+                // Button labels below each palm
+                textSize(16);
+                fill('rgba(120, 63, 4, 0.5)');
+                textAlign(CENTER, TOP);
+                for (let i = 0; i < 4; i++) {
+                    let px = width * palmPositionsGame[i].x;
+                    let py = height * palmPositionsGame[i].y;
+                    text("Botó " + (i + 1), px, py + 145);
+                }
+
+                // Check win condition
+                if (palmBananasCollected >= 4 && palmWinTime === 0) {
+                    palmWinTime = millis();
+                }
+                if (palmWinTime > 0 && millis() - palmWinTime >= 4000) {
+                    gameState = "WIN_SCREEN_PALMTREES";
+                }
+
+            } else if (gameState === "WIN_SCREEN_PALMTREES") {
+                background('#FFDF99');
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                text("PLÀTANS RECOLLITS!", width / 2, height / 2 - 50);
+                textSize(24);
+                text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
+
+                // ============================
+                // MINIGAME 3: PEELING
                 // ============================
             } else if (gameState === "MINIGAME_PEELING") {
                 background('#FFDF99'); // --color-groc-bananap
@@ -541,6 +860,19 @@
                     }
                 } else if (gameState === "WIN_SCREEN_PLANTS") {
                     if (botoId === 3) {
+                        gameState = "MINIGAME_PALMTREES";
+                        palmHits = [0, 0, 0, 0];
+                        palmDropped = [false, false, false, false];
+                        palmDisabled = [false, false, false, false];
+                        palmShaking = [false, false, false, false];
+                        palmShakeTimer = [0, 0, 0, 0];
+                        palmFallingBananas = [];
+                        palmBananasCollected = 0;
+                        palmWinTime = 0;
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "WIN_SCREEN_CATCH") {
+                    if (botoId === 3) {
                         gameState = "MINIGAME_PEELING";
                         peeledBananas = 0;
                         peelPhase = 0;
@@ -548,7 +880,54 @@
                         startTime = 0;
                         sound2.triggerAttack('C4');
                     }
-                    // --- MINIGAME 2: PEELING ---
+                } else if (gameState === "LOSE_SCREEN_CATCH") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_CATCH";
+                        catchScore = 0;
+                        catchLives = 3;
+                        fallingBananas = [];
+                        startTimeCatch = 0;
+                        lastBananaSpawn = 0;
+                        catchTotalSpawned = 0;
+                        sound2.triggerAttack('C4');
+                    }
+                    // --- MINIGAME 2: PALM TREES ---
+                } else if (gameState === "MINIGAME_PALMTREES") {
+                    if (!palmDisabled[botoId]) {
+                        palmHits[botoId]++;
+                        palmShaking[botoId] = true;
+                        palmShakeTimer[botoId] = millis();
+                        sound2.triggerAttack('C4');
+
+                        if (palmHits[botoId] >= 5 && !palmDropped[botoId]) {
+                            palmDropped[botoId] = true;
+                            palmDisabled[botoId] = true;
+                            palmBananasCollected++;
+                            sound3.triggerAttackRelease('A5', '16n');
+
+                            // Spawn falling banana at palm position
+                            let px = width * palmPositionsGame[botoId].x;
+                            let py = height * palmPositionsGame[botoId].y - 50;
+                            palmFallingBananas.push({
+                                x: px,
+                                y: py,
+                                speed: 1,
+                                animFrame: 0
+                            });
+                        }
+                    }
+                } else if (gameState === "WIN_SCREEN_PALMTREES") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_CATCH";
+                        catchScore = 0;
+                        catchLives = 3;
+                        fallingBananas = [];
+                        startTimeCatch = 0;
+                        lastBananaSpawn = 0;
+                        catchTotalSpawned = 0;
+                        sound2.triggerAttack('C4');
+                    }
+                    // --- MINIGAME 3: PEELING ---
                 } else if (gameState === "MINIGAME_PEELING") {
                     if (botoId === targetSequence[currentSequenceIndex]) {
                         currentSequenceIndex++;

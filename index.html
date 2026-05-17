@@ -90,6 +90,38 @@
         let bgCol;
         let shapeCol;
 
+        // --- GAME STATE ---
+        let gameState = "START";
+
+        // --- MINIGAME 1: PLANTS ---
+        let imgMono;
+        let imgPlants = [];
+        let plantPositions = [
+            { x: 0.15, y: 0.2 },   // superior esquerra
+            { x: 0.85, y: 0.2 },   // superior dreta
+            { x: 0.15, y: 0.8 },   // inferior esquerra
+            { x: 0.90, y: 0.8 }    // inferior dreta
+        ];
+        let plantsWinReady = false;
+        let startTimePlants = 0;
+        let maxTimePlants = 12000; // 12 seconds
+
+        // --- MINIGAME 2: PEELING ---
+        let peeledBananas = 0;
+        let peelPhase = 0;
+        const targetSequence = [0, 1, 2];
+        let currentSequenceIndex = 0;
+        let startTime = 0;
+        let endTime = 0;
+        let isBouncing = false;
+        let bounceTimer = 0;
+        let peelSprites = [];
+        let counterSprites = [];
+        let countdownSprites = []; // 10s, 8s, 6s, 4s, 2s, 0s
+        let expSprites = []; // explosion animation
+        let explanationSprites = []; // explanation animation
+        let maxTime = 12000; // 6 stages x 2 seconds = 12 seconds
+
         // --- ARDUINO DATA ---
         let faders = [512, 0, 512, 0, 0]; // F1:Filter, F2:Palette, F3:Scale, F4:Reverb, F5:Thickness
         let buttons = [0, 0, 0, 0];
@@ -163,6 +195,7 @@
                 startScreen.style.display = 'none';
                 if (footer) footer.classList.add('footer--hidden');
                 experienciaIniciada = true;
+                gameState = "MINIGAME_PLANTS";
                 statusText.innerText = "Arduino Connected";
                 loop();
 
@@ -237,58 +270,254 @@
         }
 
         // --- P5 ---
+        function preload() {
+            // Minigame 1: Plants
+            imgMono = loadImage('media/Minigame1/mono.png');
+            imgPlants = [
+                loadImage('media/Minigame1/1.png'),
+                loadImage('media/Minigame1/2.png'),
+                loadImage('media/Minigame1/3.png'),
+                loadImage('media/Minigame1/4.png')
+            ];
+
+            // Minigame 2: Peeling
+            peelSprites = [
+                [loadImage('media/game3/1.1.png'), loadImage('media/game3/1.1.png')],
+                [loadImage('media/game3/2.1.png'), loadImage('media/game3/2.2.png')],
+                [loadImage('media/game3/3.1.png'), loadImage('media/game3/3.2.png')],
+                [loadImage('media/game3/4.1.png'), loadImage('media/game3/4.2.png')]
+            ];
+            counterSprites = [
+                [loadImage('media/BananaCounter/1.0.png'), loadImage('media/BananaCounter/1.0.png')],
+                [loadImage('media/BananaCounter/1.1.png'), loadImage('media/BananaCounter/1.2.png')],
+                [loadImage('media/BananaCounter/2.1.png'), loadImage('media/BananaCounter/2.2.png')],
+                [loadImage('media/BananaCounter/3.1.png'), loadImage('media/BananaCounter/3.2.png')],
+                [
+                    loadImage('media/BananaCounter/4.1.png'),
+                    loadImage('media/BananaCounter/4.2.png'),
+                    loadImage('media/BananaCounter/4.3.png'),
+                    loadImage('media/BananaCounter/4.4.png'),
+                    loadImage('media/BananaCounter/4.5.png'),
+                    loadImage('media/BananaCounter/4.6.png')
+                ]
+            ];
+
+            // Countdown sprites: 10s, 8s, 6s, 4s, 2s, 0s
+            countdownSprites = [
+                [loadImage('media/countdown/10s.1.png'), loadImage('media/countdown/10s.2.png')],
+                [loadImage('media/countdown/8s.1.png'), loadImage('media/countdown/8s.2.png')],
+                [loadImage('media/countdown/6s.1.png'), loadImage('media/countdown/6s.2.png')],
+                [loadImage('media/countdown/4s.1.png'), loadImage('media/countdown/4s.2.png')],
+                [loadImage('media/countdown/2s.1.png'), loadImage('media/countdown/2s.2.png')],
+                [loadImage('media/countdown/0s.1.png'), loadImage('media/countdown/0s.2.png')]
+            ];
+            expSprites = [
+                loadImage('media/countdown/exp.1.png'),
+                loadImage('media/countdown/exp.2.png'),
+                loadImage('media/countdown/exp.3.png'),
+                loadImage('media/countdown/exp.4.png')
+            ];
+            explanationSprites = [
+                loadImage('media/Explanation/1.png'),
+                loadImage('media/Explanation/2.png'),
+                loadImage('media/Explanation/3.png'),
+                loadImage('media/Explanation/4.png'),
+                loadImage('media/Explanation/5.png'),
+                loadImage('media/Explanation/6.png')
+            ];
+        }
+
         function setup() {
             createCanvas(windowWidth, windowHeight);
             colorMode(HSB, 360, 100, 100, 1);
             bgCol = [...palettes[0].bg];
             shapeCol = [...palettes[0].fg];
+            textFont('Outfit');
             noLoop();
         }
 
         function draw() {
             if (!experienciaIniciada) return;
 
-            // --- AUDIO PARAMETERS CONTROL (Faders 1 & 4) ---
-            // Fader 1 (0): Lowpass Filter Cutoff
-            let cutoff = map(faders[0], 0, 1023, 200, 15000);
-            if (masterFilter) masterFilter.frequency.rampTo(cutoff, 0.1);
+            background(41, 23, 100); // BANANAP groc
 
-            // Fader 4 (3): Reverb Wet Amount
-            let revWet = map(faders[3], 0, 1023, 0, 1);
-            if (masterReverb) masterReverb.wet.value = revWet;
-
-            // --- VISUAL PARAMETERS CONTROL (Faders 2, 3, 5) ---
-            // Fader 2 (1): Palette Selection
-            let targetPalette = floor(map(faders[1], 0, 1024, 0, palettes.length));
-            if (targetPalette >= palettes.length) targetPalette = palettes.length - 1;
-            if (currentPalette !== targetPalette) {
-                currentPalette = targetPalette;
-                bgCol = [...palettes[currentPalette].bg];
-                shapeCol = [...palettes[currentPalette].fg];
+            let currentFrame = 0;
+            if (isBouncing) {
+                currentFrame = 1;
+                if (millis() - bounceTimer > 150) {
+                    isBouncing = false;
+                }
             }
 
-            // Fader 3 (2): Visual Scale Multiplier
-            let scaleMult = map(faders[2], 0, 1023, 0.5, 3.0);
+            // ============================
+            // MINIGAME 1: PLANTS
+            // ============================
+            if (gameState === "MINIGAME_PLANTS") {
+                if (startTimePlants === 0) startTimePlants = millis();
 
-            // Fader 5 (4): Stroke Thickness Multiplier
-            let thickMult = map(faders[4], 0, 1023, 0.5, 3.0);
+                let timeElapsed = millis() - startTimePlants;
+                let timeLeft = max(0, maxTimePlants - timeElapsed);
 
-            background(bgCol[0], bgCol[1], bgCol[2]);
+                if (timeLeft === 0) {
+                    gameState = "LOSE_SCREEN_PLANTS";
+                }
 
-            // Dibuixa els elements amb scale() i transmet el multiplicador de gruix
-            for (let i = elements.length - 1; i >= 0; i--) {
-                elements[i].update();
+                imageMode(CENTER);
+                if (imgMono) {
+                    image(imgMono, width / 2, height / 2, imgMono.width * 0.15, imgMono.height * 0.15);
+                }
 
-                push();
-                translate(width / 2, height / 2);
-                scale(scaleMult);
-                translate(-width / 2, -height / 2);
+                for (let i = 0; i < 4; i++) {
+                    let angle = map(faders[i], 0, 1023, PI, PI + HALF_PI);
+                    let px = width * plantPositions[i].x;
+                    let py = height * plantPositions[i].y;
+                    push();
+                    translate(px, py);
+                    rotate(angle);
+                    imageMode(CENTER);
+                    if (imgPlants[i]) {
+                        image(imgPlants[i], 0, 0, imgPlants[i].width * 0.2, imgPlants[i].height * 0.2);
+                    }
+                    pop();
+                }
 
-                elements[i].display(thickMult);
-                pop();
+                let threshold = 1023 * 0.9;
+                plantsWinReady = (faders[0] > threshold && faders[1] > threshold && faders[2] > threshold && faders[3] > threshold);
 
-                if (elements[i].isDead()) elements.splice(i, 1);
+                // Countdown sprite at bottom center
+                let countdownStage = floor(timeElapsed / 2000);
+                if (countdownStage > 5) countdownStage = 5;
+                let countdownFrame = floor((millis() / 300) % 2);
+                let cdSprite = countdownSprites[countdownStage][countdownFrame];
+                if (cdSprite) {
+                    imageMode(CENTER);
+                    image(cdSprite, width / 2, height - 80, cdSprite.width * 0.25, cdSprite.height * 0.25);
+                }
+
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, TOP);
+                textSize(28);
+                text("Mou els faders per descobrir el mono!", width / 2, 30);
+
+                if (plantsWinReady) {
+                    textAlign(CENTER, BOTTOM);
+                    textSize(24);
+                    text("Prem el Botó 1 per continuar!", width / 2, height - 30);
+                }
+
+            } else if (gameState === "LOSE_SCREEN_PLANTS") {
+                // Explosion animation at bottom
+                let expFrame = floor((millis() / 200) % 4);
+                if (expSprites[expFrame]) {
+                    imageMode(CENTER);
+                    image(expSprites[expFrame], width / 2, height - 80, expSprites[expFrame].width * 0.25, expSprites[expFrame].height * 0.25);
+                }
+
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                text("TEMPS ESGOTAT!", width / 2, height / 2 - 50);
+                textSize(24);
+                text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 50);
+
+            } else if (gameState === "WIN_SCREEN_PLANTS") {
+                imageMode(CENTER);
+                if (imgMono) {
+                    image(imgMono, width / 2, height / 2, imgMono.width * 0.15, imgMono.height * 0.15);
+                }
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                text("MONO DESCOBERT!", width / 2, height / 2 - 50);
+                textSize(24);
+                text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
+
+                // ============================
+                // MINIGAME 2: PEELING
+                // ============================
+            } else if (gameState === "MINIGAME_PEELING") {
+                background('#FFDF99'); // --color-groc-bananap
+                if (startTime === 0) startTime = millis();
+
+                let timeElapsed = millis() - startTime;
+                let timeLeft = max(0, maxTime - timeElapsed);
+
+                if (timeLeft === 0) {
+                    gameState = "LOSE_SCREEN";
+                    endTime = millis();
+                }
+
+                imageMode(CENTER);
+                let currentSprite = peelSprites[peelPhase][currentFrame];
+                if (currentSprite) {
+                    image(currentSprite, width / 2, height / 2, currentSprite.width * 0.2, currentSprite.height * 0.2);
+                }
+
+                // Draw countdown sprite at bottom center
+                let countdownStage = floor(timeElapsed / 2000); // every 2 seconds
+                if (countdownStage > 5) countdownStage = 5;
+                let countdownFrame = floor((millis() / 300) % 2); // alternate frames
+                let cdSprite = countdownSprites[countdownStage][countdownFrame];
+                if (cdSprite) {
+                    imageMode(CENTER);
+                    image(cdSprite, width / 2, height - 80, cdSprite.width * 0.25, cdSprite.height * 0.25);
+                }
+
+                // Draw explanation animation on the right
+                let expIdx = floor((millis() / 400) % 6);
+                if (explanationSprites[expIdx]) {
+                    imageMode(CENTER);
+                    image(explanationSprites[expIdx], width - 200, height / 2, explanationSprites[expIdx].width * 0.1, explanationSprites[expIdx].height * 0.1);
+                }
+
+            } else if (gameState === "WIN_SCREEN") {
+                background('#FFDF99'); // --color-groc-bananap
+                textAlign(CENTER, CENTER);
+                textSize(64);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("YOU WIN!", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Time: " + ((endTime - startTime) / 1000).toFixed(2) + "s", width / 2, height / 2 + 50);
+                text("Press Button 4 to restart", width / 2, height / 2 + 100);
+            } else if (gameState === "LOSE_SCREEN") {
+                background('#FFDF99'); // --color-groc-bananap
+                // Draw explosion animation at bottom center
+                let expFrame = floor((millis() / 200) % 4);
+                if (expSprites[expFrame]) {
+                    imageMode(CENTER);
+                    image(expSprites[expFrame], width / 2, height - 80, expSprites[expFrame].width * 0.25, expSprites[expFrame].height * 0.25);
+                }
+
+                textAlign(CENTER, CENTER);
+                textSize(64);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("YOU LOSE!", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Time's up! Bananas peeled: " + peeledBananas, width / 2, height / 2 + 50);
+                text("Press Button 4 to restart", width / 2, height / 2 + 100);
             }
+
+            // Dibuixar el comptador només al segon minijoc (no a la lose screen)
+            if (gameState === "MINIGAME_PEELING" || gameState === "WIN_SCREEN") {
+                let counterFrame = currentFrame;
+                if (peeledBananas >= 4) {
+                    counterFrame = floor((millis() / 150) % 4);
+                }
+
+                let currentCounter = counterSprites[min(peeledBananas, 4)][counterFrame];
+                if (currentCounter) {
+                    imageMode(CENTER);
+                    let w = currentCounter.width * 0.08;
+                    let h = currentCounter.height * 0.08;
+                    image(currentCounter, 20 + w / 2, height / 2, w, h);
+                }
+            }
+
 
             // Gestionar footer
             if (windowHeight - mouseY < 120) footer.classList.remove('footer--hidden');
@@ -296,26 +525,67 @@
         }
 
         function dispararEfecte(botoId) {
-            const h = shapeCol[0], s = shapeCol[1], b = shapeCol[2];
-            const cx = width / 2, cy = height / 2;
-
             try {
-                if (botoId === 0) {
-                    sound0.triggerAttackRelease('C1', '8n');
-                    elements.push(new Shrink(cx, cy, h, 200));
-                    elements.push(new Flash(h, s, b));
-                } else if (botoId === 1) {
-                    sound1.triggerAttackRelease('16n');
-                    for (let i = 0; i < 8; i++) elements.push(new RadLine(cx, cy, h, i * PI / 4, 8));
-                    elements.push(new ParBars(h, false, 3, 80));
-                } else if (botoId === 2) {
-                    sound2.triggerAttack('C4');
-                    elements.push(new Ring(cx, cy, h, 24, 6));
-                    elements.push(new Diamond(cx, cy, h, true));
-                } else if (botoId === 3) {
-                    sound3.triggerAttackRelease('A5', '16n');
-                    elements.push(new ZigZag(h));
-                    for (let i = 0; i < 12; i++) elements.push(new Dot(cx, cy, h, random(10, 20), random(3, 8)));
+                // --- MINIGAME 1: PLANTS ---
+                if (gameState === "MINIGAME_PLANTS") {
+                    if (botoId === 0 && plantsWinReady) {
+                        gameState = "WIN_SCREEN_PLANTS";
+                        sound3.triggerAttackRelease('A5', '16n');
+                    }
+                } else if (gameState === "LOSE_SCREEN_PLANTS") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_PLANTS";
+                        startTimePlants = 0;
+                        plantsWinReady = false;
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "WIN_SCREEN_PLANTS") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_PEELING";
+                        peeledBananas = 0;
+                        peelPhase = 0;
+                        currentSequenceIndex = 0;
+                        startTime = 0;
+                        sound2.triggerAttack('C4');
+                    }
+                    // --- MINIGAME 2: PEELING ---
+                } else if (gameState === "MINIGAME_PEELING") {
+                    if (botoId === targetSequence[currentSequenceIndex]) {
+                        currentSequenceIndex++;
+                        peelPhase = currentSequenceIndex;
+                        isBouncing = true;
+                        bounceTimer = millis();
+                        sound2.triggerAttack('C4');
+
+                        if (currentSequenceIndex >= targetSequence.length) {
+                            currentSequenceIndex = 0;
+                            peeledBananas++;
+                            sound3.triggerAttackRelease('A5', '16n');
+
+                            if (peeledBananas >= 4) {
+                                gameState = "WIN_SCREEN";
+                                endTime = millis();
+                                sound0.triggerAttackRelease('C1', '8n');
+                            } else {
+                                setTimeout(() => {
+                                    if (gameState === "MINIGAME_PEELING") peelPhase = 0;
+                                }, 300);
+                            }
+                        }
+                    } else {
+                        currentSequenceIndex = 0;
+                        peelPhase = 0;
+                        sound1.triggerAttackRelease('16n');
+                    }
+                } else if (gameState === "WIN_SCREEN" || gameState === "LOSE_SCREEN") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_PEELING";
+                        peeledBananas = 0;
+                        peelPhase = 0;
+                        currentSequenceIndex = 0;
+                        startTime = millis();
+                        sound2.triggerAttack('C4');
+                    }
                 }
             } catch (e) {
                 console.warn(e);

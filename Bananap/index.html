@@ -289,9 +289,6 @@
                 startScreen.style.display = 'none';
                 if (footer) footer.classList.add('footer--hidden');
                 experienciaIniciada = true;
-                if (gameState !== 'SELECT_MINIGAMES') {
-                    gameState = "INTRO_PLANTS";
-                }
                 statusText.innerText = "Arduino Connected";
                 loop();
 
@@ -306,7 +303,12 @@
             }
         }
 
-        connectBtn.addEventListener('click', connectSerial);
+        connectBtn.addEventListener('click', async () => {
+            await connectSerial();
+            if (experienciaIniciada) {
+                gameState = "INTRO_PLANTS";
+            }
+        });
 
         async function readLoop() {
             while (true) {

@@ -1,4 +1,4 @@
-const int FADER_PINS[5]  = { A0, A1, A2, A3, A5 };
+ const int FADER_PINS[5]  = { A0, A1, A2, A3, A5 };
 const int BUTTON_PINS[4] = { 2, 3, 4, 5 };
 
 int  faderValues[5] = {0};

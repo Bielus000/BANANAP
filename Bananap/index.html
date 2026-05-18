@@ -64,12 +64,14 @@
 
 <body>
     <div id="start-screen" class="start-screen">
-        <img src="media/Logo.png" alt="Logo BANANAP" class="start-logo">
+        <img id="start-logo-img" src="media/LOGONANAP.png" alt="Logo BANANAP" class="start-logo">
         <p class="text-style-title-text">Connect Arduino & Pump Up the speakers</p>
         <button id="connect-btn" class="connect-btn text-style-footer-button">Connect Arduino</button>
     </div>
 
     <div id="connection-status">Not connected</div>
+
+    <div id="ui-layer" class="ui-layer" aria-hidden="true"></div>
 
     <footer class="footer">
         <div class="footer-content">
@@ -97,10 +99,10 @@
         let imgMono;
         let imgPlants = [];
         let plantPositions = [
-            { x: 0.15, y: 0.2 },   // superior esquerra
-            { x: 0.85, y: 0.2 },   // superior dreta
-            { x: 0.15, y: 0.8 },   // inferior esquerra
-            { x: 0.90, y: 0.8 }    // inferior dreta
+            { x: 0.05, y: 0.3 },   // superior esquerra
+            { x: 0.95, y: 0.3 },   // superior dreta
+            { x: 0.05, y: 0.6 },   // inferior esquerra
+            { x: 0.95, y: 0.6 }    // inferior dreta
         ];
         let plantsWinReady = false;
         let startTimePlants = 0;
@@ -137,6 +139,7 @@
         let lastBananaSpawn = 0;
         let bananaSpawnInterval = 1200; // ms
         let catchTotalSpawned = 0;
+        let endlessModeActive = false; // Endless mode flag
 
         // --- MINIGAME 3: PEELING ---
         let peeledBananas = 0;
@@ -152,8 +155,15 @@
         let counterSpritesCatch = []; // Counter sprites for CATCH minigame
         let countdownSprites = []; // 10s, 8s, 6s, 4s, 2s, 0s
         let expSprites = []; // explosion animation
-        let explanationSprites = []; // explanation animation
+        let explanationSprites = []; // explanation animation for minigame 4
+        let explanationSprites1 = []; // explanation animation for minigame 1
+        let explanationSprites2 = []; // explanation animation for minigame 2
+        let explanationSprites3 = []; // explanation animation for minigame 3
+        let explanationSprites5 = []; // explanation animation for minigame 5
+        let logoAnimSprites = []; // Logo animation images
         let maxTime = 12000; // 6 stages x 2 seconds = 12 seconds
+
+        const uiLayer = document.getElementById('ui-layer');
 
         // --- MINIGAME 5: SEQUENCE ---
         let mg5Sprites = [[], [], [], []];
@@ -196,6 +206,28 @@
         let masterFilter;
         let masterReverb;
         let sound0, sound1, sound2, sound3;
+        let palmSound;
+        let clapSound;
+        let cintaSound;
+        let comerSound;
+        let backgroundMusic;
+        let backgroundMusicReady = false;
+        let backgroundMusicPlaying = false;
+        let minigameHubMode = false;
+        let selectionHubBuilt = false;
+
+        function syncBackgroundMusic() {
+            if (!backgroundMusicReady || !backgroundMusic) {
+                return;
+            }
+
+            const shouldPlay = experienciaIniciada;
+
+            if (shouldPlay && !backgroundMusicPlaying) {
+                backgroundMusic.start();
+                backgroundMusicPlaying = true;
+            }
+        }
 
         function setupAudio() {
             // Setup global effects
@@ -206,6 +238,19 @@
             masterReverb.generate();
 
             tiroSound = new Tone.Player("media/tiro.mp3").toDestination();
+            palmSound = new Tone.Player("media/palmeres.mp3").toDestination();
+            clapSound = new Tone.Player("media/clap.mp3").toDestination();
+            cintaSound = new Tone.Player("media/cinta.mp3").toDestination();
+            comerSound = new Tone.Player("media/comer.mp3").toDestination();
+            backgroundMusic = new Tone.Player({
+                url: "media/musica.mp3",
+                loop: true,
+                volume: -10,
+                onload: () => {
+                    backgroundMusicReady = true;
+                    syncBackgroundMusic();
+                }
+            }).toDestination();
 
             // Setup 4 distinct sounds for the 4 buttons routing to Reverb
             // Sound 0: Deep Kick
@@ -301,6 +346,9 @@
                     for (let i = 0; i < 4; i++) {
                         let currentBtn = parseInt(data.b[i]);
                         if (currentBtn === 1 && prevButtons[i] === 0) {
+                            if (gameState === "MINIGAME_CATCH" && i === 0 && clapSound) {
+                                clapSound.start();
+                            }
                             dispararEfecte(i);
                         }
                         prevButtons[i] = currentBtn;
@@ -404,6 +452,33 @@
                 loadImage('media/Explanation/5.png'),
                 loadImage('media/Explanation/6.png')
             ];
+            explanationSprites1 = [
+                loadImage('media/Minigame1/Explicacio 1/Untitled_Artwork-1.png'),
+                loadImage('media/Minigame1/Explicacio 1/Untitled_Artwork-2.png')
+            ];
+            explanationSprites2 = [
+                loadImage('media/Minigame2/explicacio 2/Untitled_Artwork-1.png'),
+                loadImage('media/Minigame2/explicacio 2/Untitled_Artwork-2.png')
+            ];
+            explanationSprites3 = [
+                loadImage('media/Minigame2.5/explicacio 3/Untitled_Artwork-1.png'),
+                loadImage('media/Minigame2.5/explicacio 3/Untitled_Artwork-2.png')
+            ];
+            explanationSprites5 = [
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-1.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-2.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-3.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-4.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-5.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-6.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-7.png'),
+                loadImage('media/Minigame5/explicacio 5/Untitled_Artwork-8.png')
+            ];
+            logoAnimSprites = [
+                'media/logo-animacio/LOGONANAP 1.png',
+                'media/logo-animacio/LOGONANAP 2.png',
+                'media/logo-animacio/LOGONANAP 3.png'
+            ];
 
             // Minigame 5: Sequence
             for (let i = 1; i <= 15; i++) {
@@ -421,6 +496,351 @@
             shapeCol = [...palettes[0].fg];
             textFont('Outfit');
             noLoop();
+        }
+
+        function createPanelShell({ left, top, width, height, className = '' }) {
+            const panel = document.createElement('section');
+            panel.className = `banana-panel${className ? ` ${className}` : ''}`;
+            panel.style.left = `${left}px`;
+            panel.style.top = `${top}px`;
+            panel.style.width = `${width}px`;
+            panel.style.height = `${height}px`;
+
+            const content = document.createElement('div');
+            content.className = 'banana-panel__content';
+            panel.appendChild(content);
+
+            return { panel, content };
+        }
+
+        function appendStackPanel(panels, config) {
+            const { panel, content } = createPanelShell(config);
+
+            const title = document.createElement('p');
+            title.className = 'banana-panel__title';
+            title.textContent = config.title;
+            content.appendChild(title);
+
+            if (config.divider) {
+                const divider = document.createElement('div');
+                divider.className = 'banana-panel__divider';
+                content.appendChild(divider);
+            }
+
+            if (config.secondary) {
+                const secondary = document.createElement('p');
+                secondary.className = 'banana-panel__secondary';
+                secondary.textContent = config.secondary;
+                content.appendChild(secondary);
+            }
+
+            if (config.body) {
+                const body = document.createElement('p');
+                body.className = 'banana-panel__body';
+                body.textContent = config.body;
+                content.appendChild(body);
+            }
+
+            panels.push(panel);
+        }
+
+        function appendCompactPanel(panels, config) {
+            const { panel, content } = createPanelShell({
+                ...config,
+                className: `${config.className || ''} banana-panel--compact`.trim()
+            });
+
+            const single = document.createElement('p');
+            single.className = 'banana-panel__single';
+            single.textContent = config.text;
+            content.appendChild(single);
+
+            panels.push(panel);
+        }
+
+        function appendCaptionPanel(panels, config) {
+            const { panel, content } = createPanelShell({
+                ...config,
+                className: `${config.className || ''} banana-panel--caption`.trim()
+            });
+
+            const single = document.createElement('p');
+            single.className = 'banana-panel__single';
+            single.textContent = config.text;
+            content.appendChild(single);
+
+            panels.push(panel);
+        }
+
+        function appendSelectionPanel(panels) {
+            const { panel, content } = createPanelShell({
+                left: Math.round(windowWidth / 2 - 460),
+                top: Math.round(windowHeight / 2 - 220),
+                width: 920,
+                height: 520,
+                className: 'banana-panel--select'
+            });
+
+            const title = document.createElement('p');
+            title.className = 'banana-panel__title';
+            title.textContent = 'TRIA UN MINIJOC';
+            content.appendChild(title);
+
+            const divider = document.createElement('div');
+            divider.className = 'banana-panel__divider';
+            content.appendChild(divider);
+
+            const subtitle = document.createElement('p');
+            subtitle.className = 'banana-panel__body';
+            subtitle.textContent = 'Després de la història, juga el minijoc que vulguis i torna aquí cada vegada.';
+            content.appendChild(subtitle);
+
+            const grid = document.createElement('div');
+            grid.className = 'banana-select-grid';
+
+            const options = [
+                ['1', 'Descobrir el Mono', 'Plantes i faders'],
+                ['2', 'Recol·lecció de Plàtans', 'Palmeres i caiguda'],
+                ['3', 'Atrapa Plàtans', 'Mà i reflexos'],
+                ['4', 'Pelar Plàtans', 'Seqüència i temps'],
+                ['5', 'Seqüència Final', 'Animació i música']
+            ];
+
+            options.forEach(([id, titleText, description]) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'banana-select-button';
+                button.innerHTML = `${id}. ${titleText}<span>${description}</span>`;
+                button.addEventListener('click', () => startMinigameFromHub(Number(id)));
+                grid.appendChild(button);
+            });
+
+            content.appendChild(grid);
+
+            const logoButton = document.createElement('button');
+            logoButton.type = 'button';
+            logoButton.className = 'banana-select-logo-button banana-select-logo-floating';
+            logoButton.setAttribute('aria-label', 'Recarregar la pàgina');
+            logoButton.style.top = `${Math.round(windowHeight / 2 - 340)}px`;
+            logoButton.addEventListener('click', () => window.location.reload());
+
+            const logo = document.createElement('img');
+            logo.className = 'banana-select-logo';
+            logo.src = 'media/LOGONANAP.png';
+            logo.alt = 'Logo BANANAP';
+            logoButton.appendChild(logo);
+
+            panels.push(panel);
+            panels.push(logoButton);
+        }
+
+        function enterSelectionHub() {
+            minigameHubMode = true;
+            gameState = 'SELECT_MINIGAMES';
+            selectionHubBuilt = false;
+        }
+
+        function startMinigameFromHub(minigameId) {
+            minigameHubMode = true;
+
+            if (minigameId === 1) {
+                gameState = 'MINIGAME_PLANTS';
+                startTimePlants = 0;
+                plantsWinReady = false;
+            } else if (minigameId === 2) {
+                gameState = 'MINIGAME_PALMTREES';
+                palmHits = [0, 0, 0, 0];
+                palmDropped = [false, false, false, false];
+                palmDisabled = [false, false, false, false];
+                palmShaking = [false, false, false, false];
+                palmShakeTimer = [0, 0, 0, 0];
+                palmFallingBananas = [];
+                palmBananasCollected = 0;
+                palmWinTime = 0;
+            } else if (minigameId === 3) {
+                gameState = 'MINIGAME_CATCH';
+                endlessModeActive = true; // Enable endless mode when selected from hub
+                catchScore = 0;
+                catchLives = 3;
+                fallingBananas = [];
+                startTimeCatch = 0;
+                lastBananaSpawn = 0;
+                catchTotalSpawned = 0;
+            } else if (minigameId === 4) {
+                gameState = 'MINIGAME_PEELING';
+                peeledBananas = 0;
+                peelPhase = 0;
+                currentSequenceIndex = 0;
+                startTime = 0;
+                endTime = 0;
+            } else if (minigameId === 5) {
+                gameState = 'MINIGAME_SEQUENCE';
+                mg5ActiveButton = 0;
+                mg5AnimationPlaying = false;
+                mg5CurrentAnimFrame = 0;
+                mg5ShotFired = false;
+            }
+        }
+
+        function renderUiLayer() {
+            if (!uiLayer) {
+                return;
+            }
+
+            if (gameState === 'SELECT_MINIGAMES') {
+                if (!selectionHubBuilt) {
+                    const panels = [];
+                    appendSelectionPanel(panels);
+                    uiLayer.replaceChildren(...panels);
+                    selectionHubBuilt = true;
+                }
+                return;
+            }
+
+            const panels = [];
+
+            if (gameState === 'INTRO_PLANTS') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 410),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 820,
+                    height: 360,
+                    title: 'MINIJOC 1: DESCOBRIR EL MONO',
+                    divider: true,
+                    secondary: 'Mou els faders 2, 3, 4 i 5 fins a dalt de tot!',
+                    body: 'Prem el Botó 4 per començar'
+                });
+            } else if (gameState === 'INTRO_PALMTREES') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 430),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 860,
+                    height: 360,
+                    title: 'MINIJOC 2: RECOL·LECCIÓ DE PLÀTANS',
+                    divider: true,
+                    secondary: 'Colpeja les 4 palmeres prement els Botons 1, 2, 3 i 4',
+                    body: '(5 cops cadascun)'
+                });
+            } else if (gameState === 'INTRO_CATCH') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 410),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 820,
+                    height: 360,
+                    title: 'MINIJOC 3: ATRAPA PLÀTANS',
+                    divider: true,
+                    secondary: 'Mou la mà amb el Fader 1 i tanca-la',
+                    body: 'Amb el Botó 1 per atrapar-los!'
+                });
+            } else if (gameState === 'INTRO_PEELING') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 430),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 860,
+                    height: 360,
+                    title: 'MINIJOC 4: PELAR PLÀTANS',
+                    divider: true,
+                    secondary: "Prem els Botons 1, 2 i 3 en l'ordre correcte",
+                    body: "Repetidament abans no s'acabi el temps!"
+                });
+            } else if (gameState === 'INTRO_SEQUENCE') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 430),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 860,
+                    height: 360,
+                    title: 'MINIJOC 5: SEQÜÈNCIA FINAL',
+                    divider: true,
+                    secondary: 'Activa els botons un per un (1 -> 2 -> 3 -> 4)',
+                    body: "Per veure l'animació"
+                });
+            } else if (gameState === 'LOSE_SCREEN_PLANTS') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 360),
+                    top: Math.round(windowHeight / 2 - 170),
+                    width: 720,
+                    height: 300,
+                    title: 'TEMPS ESGOTAT!',
+                    divider: true,
+                    secondary: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per tornar a intentar-ho'
+                });
+            } else if (gameState === 'WIN_SCREEN_PLANTS') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 380),
+                    top: Math.round(windowHeight / 2 - 170),
+                    width: 760,
+                    height: 300,
+                    title: 'MONO DESCOBERT!',
+                    divider: true,
+                    secondary: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per al següent minijoc'
+                });
+            } else if (gameState === 'WIN_SCREEN_CATCH') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 390),
+                    top: Math.round(windowHeight / 2 - 180),
+                    width: 780,
+                    height: 320,
+                    title: 'PLÀTANS ATRAPATS!',
+                    divider: true,
+                    secondary: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per al següent minijoc'
+                });
+            } else if (gameState === 'LOSE_SCREEN_CATCH') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 410),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 820,
+                    height: 360,
+                    title: 'HAS PERDUT!',
+                    divider: true,
+                    secondary: endlessModeActive ? `Plàtans atrapats: ${catchScore}` : `Atrapats: ${catchScore}/${catchTargetScore}`,
+                    body: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per tornar a intentar-ho'
+                });
+            } else if (gameState === 'WIN_SCREEN_PALMTREES') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 390),
+                    top: Math.round(windowHeight / 2 - 180),
+                    width: 780,
+                    height: 320,
+                    title: 'PLÀTANS RECOLLITS!',
+                    divider: true,
+                    secondary: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per al següent minijoc'
+                });
+            } else if (gameState === 'WIN_SCREEN_PEELING') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 410),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 820,
+                    height: 360,
+                    title: 'PLÀTANS PELATS!',
+                    divider: true,
+                    secondary: `Temps: ${((endTime - startTime) / 1000).toFixed(2)}s`,
+                    body: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per al següent minijoc'
+                });
+            } else if (gameState === 'LOSE_SCREEN_PEELING') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 410),
+                    top: Math.round(windowHeight / 2 - 190),
+                    width: 820,
+                    height: 360,
+                    title: 'HAS PERDUT!',
+                    divider: true,
+                    secondary: `S'ha acabat el temps! Plàtans pelats: ${peeledBananas}`,
+                    body: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per tornar a intentar-ho'
+                });
+            } else if (gameState === 'WIN_SCREEN') {
+                appendStackPanel(panels, {
+                    left: Math.round(windowWidth / 2 - 400),
+                    top: Math.round(windowHeight / 2 - 180),
+                    width: 800,
+                    height: 320,
+                    title: 'VICTÒRIA FINAL!',
+                    divider: true,
+                    secondary: 'Gràcies per jugar a BANANAP!',
+                    body: 'Prem el Botó 4 per anar a la selecció'
+                });
+            }
+
+            uiLayer.replaceChildren(...panels);
         }
 
         function draw() {
@@ -441,6 +861,11 @@
             // ============================
             if (gameState === "INTRO_PLANTS") {
                 background('#FFDF99');
+                let expIdx1 = floor((millis() / 800) % explanationSprites1.length);
+                if (explanationSprites1[expIdx1]) {
+                    imageMode(CENTER);
+                    image(explanationSprites1[expIdx1], width - 200, height / 2 - 50, explanationSprites1[expIdx1].width * 0.1, explanationSprites1[expIdx1].height * 0.1);
+                }
                 textAlign(CENTER, CENTER);
                 textSize(48);
                 textStyle(BOLD);
@@ -448,12 +873,17 @@
                 noStroke();
                 text("Minijoc 1: Descobrir el Mono", width / 2, height / 2 - 50);
                 textSize(32);
-                text("Mou els 4 faders fins a dalt de tot!", width / 2, height / 2 + 50);
+                text("Mou els faders 2, 3, 4 i 5 fins a dalt de tot!", width / 2, height / 2 + 50);
                 textSize(24);
                 text("Prem el Botó 4 per començar", width / 2, height / 2 + 150);
 
             } else if (gameState === "INTRO_PALMTREES") {
                 background('#FFDF99');
+                let expIdx2 = floor((millis() / 800) % explanationSprites2.length);
+                if (explanationSprites2[expIdx2]) {
+                    imageMode(CENTER);
+                    image(explanationSprites2[expIdx2], width - 200, height / 2 - 50, explanationSprites2[expIdx2].width * 0.1, explanationSprites2[expIdx2].height * 0.1);
+                }
                 textAlign(CENTER, CENTER);
                 textSize(48);
                 textStyle(BOLD);
@@ -467,6 +897,11 @@
 
             } else if (gameState === "INTRO_CATCH") {
                 background('#FFDF99');
+                let expIdx3 = floor((millis() / 800) % explanationSprites3.length);
+                if (explanationSprites3[expIdx3]) {
+                    imageMode(CENTER);
+                    image(explanationSprites3[expIdx3], width - 200, height / 2 - 50, explanationSprites3[expIdx3].width * 0.1, explanationSprites3[expIdx3].height * 0.1);
+                }
                 textAlign(CENTER, CENTER);
                 textSize(48);
                 textStyle(BOLD);
@@ -480,6 +915,11 @@
 
             } else if (gameState === "INTRO_PEELING") {
                 background('#FFDF99');
+                let expIdx = floor((millis() / 400) % 6);
+                if (explanationSprites[expIdx]) {
+                    imageMode(CENTER);
+                    image(explanationSprites[expIdx], width - 200, height / 2 - 50, explanationSprites[expIdx].width * 0.1, explanationSprites[expIdx].height * 0.1);
+                }
                 textAlign(CENTER, CENTER);
                 textSize(48);
                 textStyle(BOLD);
@@ -493,6 +933,11 @@
 
             } else if (gameState === "INTRO_SEQUENCE") {
                 background('#FFDF99');
+                let expIdx5 = floor((millis() / 400) % explanationSprites5.length);
+                if (explanationSprites5[expIdx5]) {
+                    imageMode(CENTER);
+                    image(explanationSprites5[expIdx5], width - 200, height / 2 - 50, explanationSprites5[expIdx5].width * 0.1, explanationSprites5[expIdx5].height * 0.1);
+                }
                 textAlign(CENTER, CENTER);
                 textSize(48);
                 textStyle(BOLD);
@@ -523,13 +968,16 @@
                 }
 
                 for (let i = 0; i < 4; i++) {
-                    let angle = map(faders[i], 0, 1023, PI, PI + HALF_PI);
+                    let angle = map(faders[i + 1], 0, 1023, PI, PI + HALF_PI);
+                    if (i === 0 || i === 2) {
+                        angle += PI; // Rota 180 graus les dues plantes de l'esquerra
+                    }
                     let px = width * plantPositions[i].x;
                     let py = height * plantPositions[i].y;
                     push();
                     translate(px, py);
                     rotate(angle);
-                    imageMode(CENTER);
+                    imageMode(CORNER);
                     if (imgPlants[i]) {
                         image(imgPlants[i], 0, 0, imgPlants[i].width * 0.2, imgPlants[i].height * 0.2);
                     }
@@ -537,7 +985,7 @@
                 }
 
                 let threshold = 1023 * 0.9;
-                plantsWinReady = (faders[0] > threshold && faders[1] > threshold && faders[2] > threshold && faders[3] > threshold);
+                plantsWinReady = (faders[1] > threshold && faders[2] > threshold && faders[3] > threshold && faders[4] > threshold);
 
                 // Countdown sprite at bottom center
                 let countdownStage = floor(timeElapsed / 2000);
@@ -557,10 +1005,10 @@
                 text("Mou els faders per descobrir el mono!", width / 2, 30);
 
                 if (plantsWinReady) {
-                    textAlign(CENTER, BOTTOM);
+                    textAlign(CENTER, TOP);
                     textSize(24);
                     textStyle(BOLD);
-                    text("Prem el Botó 1 per continuar!", width / 2, height - 30);
+                    text("Prem el Botó 1 per continuar!", width / 2, 70);
                 }
 
             } else if (gameState === "LOSE_SCREEN_PLANTS") {
@@ -607,23 +1055,36 @@
                     startTimeCatch = millis();
                 }
 
-                // Check if 15 seconds have passed and restart
-                if (millis() - startTimeCatch > 15000) {
-                    gameState = "MINIGAME_CATCH";
-                    catchScore = 0;
-                    catchLives = 3;
-                    fallingBananas = [];
-                    startTimeCatch = 0;
-                    lastBananaSpawn = 0;
-                    catchTotalSpawned = 0;
+                // Endless mode: no time limit, continuous spawning
+                if (endlessModeActive) {
+                    // No restart condition
+                } else {
+                    // Normal mode: Check if 15 seconds have passed and restart
+                    if (millis() - startTimeCatch > 15000) {
+                        gameState = "MINIGAME_CATCH";
+                        catchScore = 0;
+                        catchLives = 3;
+                        fallingBananas = [];
+                        startTimeCatch = 0;
+                        lastBananaSpawn = 0;
+                        catchTotalSpawned = 0;
+                    }
                 }
 
-                // Spawn bananas (max 4)
-                if (catchTotalSpawned < 4 && millis() - lastBananaSpawn > bananaSpawnInterval) {
+                // Calculate difficulty multiplier for endless mode
+                let timePassed = millis() - startTimeCatch;
+                let difficultyMultiplier = 1 + (timePassed / 20000); // Difficulty increases every 20 seconds
+
+                // Spawn bananas
+                let maxBananas = endlessModeActive ? 999 : 4; // Unlimited in endless mode
+                let spawnIntervalAdj = endlessModeActive ? bananaSpawnInterval / difficultyMultiplier : bananaSpawnInterval;
+                
+                if (catchTotalSpawned < maxBananas && millis() - lastBananaSpawn > spawnIntervalAdj) {
+                    let speedAdj = endlessModeActive ? random(2 * difficultyMultiplier, 5 * difficultyMultiplier) : random(2, 5);
                     fallingBananas.push({
                         x: random(100, width - 100),
                         y: -50,
-                        speed: random(2, 5),
+                        speed: speedAdj,
                         rotFrame: floor(random(4))
                     });
                     lastBananaSpawn = millis();
@@ -693,23 +1154,35 @@
                 image(handSprites[handIdx], handX, handY, handW, handH);
 
                 // Check win/lose
-                if (catchScore >= catchTargetScore) {
+                if (!endlessModeActive && catchScore >= catchTargetScore) {
                     gameState = "WIN_SCREEN_CATCH";
                 } else if (catchLives <= 0) {
                     gameState = "LOSE_SCREEN_CATCH";
+                    endlessModeActive = false; // Exit endless mode on lose
                 }
 
-                // Draw counter animation
-                let counterIdx = min(catchScore, 4);
-                let counterFrames = counterSpritesCatch[counterIdx];
-                if (counterFrames && counterFrames.length > 0) {
-                    let counterFrame = floor((millis() / 300) % counterFrames.length);
-                    let sprite = counterFrames[counterFrame];
-                    if (sprite) {
-                        imageMode(CENTER);
-                        let w = sprite.width * 0.08;
-                        let h = sprite.height * 0.08;
-                        image(sprite, width / 2, 140, w, h);
+                // Draw score/counter
+                if (endlessModeActive) {
+                    // Endless mode: show score as text
+                    fill('rgba(120, 63, 4, 1)');
+                    noStroke();
+                    textAlign(CENTER, TOP);
+                    textSize(48);
+                    textStyle(BOLD);
+                    text(catchScore, width / 2, 120);
+                } else {
+                    // Normal mode: show counter animation
+                    let counterIdx = min(catchScore, 4);
+                    let counterFrames = counterSpritesCatch[counterIdx];
+                    if (counterFrames && counterFrames.length > 0) {
+                        let counterFrame = floor((millis() / 300) % counterFrames.length);
+                        let sprite = counterFrames[counterFrame];
+                        if (sprite) {
+                            imageMode(CENTER);
+                            let w = sprite.width * 0.08;
+                            let h = sprite.height * 0.08;
+                            image(sprite, width / 2, 140, w, h);
+                        }
                     }
                 }
 
@@ -720,6 +1193,13 @@
                 textSize(28);
                 textStyle(BOLD);
                 text("Vides: " + catchLives, width - 30, 30);
+
+                // Draw difficulty multiplier in endless mode
+                if (endlessModeActive) {
+                    textAlign(LEFT, TOP);
+                    textSize(24);
+                    text("Dificultad: " + difficultyMultiplier.toFixed(2) + "x", 30, 30);
+                }
 
             } else if (gameState === "WIN_SCREEN_CATCH") {
                 background('#FFDF99');
@@ -743,7 +1223,11 @@
                 text("HAS PERDUT!", width / 2, height / 2 - 50);
                 textSize(24);
                 textStyle(BOLD);
-                text("Atrapats: " + catchScore + "/" + catchTargetScore, width / 2, height / 2 + 20);
+                if (endlessModeActive) {
+                    text("Plàtans atrapats: " + catchScore, width / 2, height / 2 + 20);
+                } else {
+                    text("Atrapats: " + catchScore + "/" + catchTargetScore, width / 2, height / 2 + 20);
+                }
                 text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 60);
 
                 // ============================
@@ -887,13 +1371,6 @@
                     image(cdSprite, width / 2, height - 130, cdSprite.width * 0.25, cdSprite.height * 0.25);
                 }
 
-                // Draw explanation animation on the right
-                let expIdx = floor((millis() / 400) % 6);
-                if (explanationSprites[expIdx]) {
-                    imageMode(CENTER);
-                    image(explanationSprites[expIdx], width - 200, height / 2 - 50, explanationSprites[expIdx].width * 0.1, explanationSprites[expIdx].height * 0.1);
-                }
-
             } else if (gameState === "WIN_SCREEN_PEELING") {
                 background('#FFDF99');
                 textAlign(CENTER, CENTER);
@@ -992,7 +1469,7 @@
                 textSize(32);
                 textStyle(BOLD);
                 text("Gràcies per jugar a BANANAP!", width / 2, height / 2 + 50);
-                text("Prem el Botó 4 per tornar a l'inici", width / 2, height / 2 + 100);
+                text("Prem el Botó 4 per anar a la selecció", width / 2, height / 2 + 100);
             }
 
             // Dibuixar el comptador només al segon minijoc (no a la lose screen)
@@ -1011,6 +1488,10 @@
                 }
             }
 
+            syncBackgroundMusic();
+
+            renderUiLayer();
+
 
             // Gestionar footer
             if (windowHeight - mouseY < 120) footer.classList.remove('footer--hidden');
@@ -1025,7 +1506,6 @@
                         gameState = "MINIGAME_PLANTS";
                         startTimePlants = 0;
                         plantsWinReady = false;
-                        sound2.triggerAttack('C4');
                     }
                 } else if (gameState === "MINIGAME_PLANTS") {
                     if (botoId === 0 && plantsWinReady) {
@@ -1034,15 +1514,21 @@
                     }
                 } else if (gameState === "LOSE_SCREEN_PLANTS") {
                     if (botoId === 3) {
-                        gameState = "MINIGAME_PLANTS";
-                        startTimePlants = 0;
-                        plantsWinReady = false;
-                        sound2.triggerAttack('C4');
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                        } else {
+                            gameState = "MINIGAME_PLANTS";
+                            startTimePlants = 0;
+                            plantsWinReady = false;
+                        }
                     }
                 } else if (gameState === "WIN_SCREEN_PLANTS") {
                     if (botoId === 3) {
-                        gameState = "INTRO_PALMTREES";
-                        sound2.triggerAttack('C4');
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                        } else {
+                            gameState = "INTRO_PALMTREES";
+                        }
                     }
                 } else if (gameState === "INTRO_PALMTREES") {
                     if (botoId === 3) {
@@ -1055,35 +1541,48 @@
                         palmFallingBananas = [];
                         palmBananasCollected = 0;
                         palmWinTime = 0;
-                        sound2.triggerAttack('C4');
                     }
                 } else if (gameState === "WIN_SCREEN_CATCH") {
+                    if (botoId === 3) {
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                        } else {
+                            gameState = "INTRO_PEELING";
+                        }
+                    }
+                } else if (gameState === "INTRO_PEELING") {
                     if (botoId === 3) {
                         gameState = "MINIGAME_PEELING";
                         peeledBananas = 0;
                         peelPhase = 0;
                         currentSequenceIndex = 0;
                         startTime = 0;
-                        sound2.triggerAttack('C4');
                     }
                 } else if (gameState === "LOSE_SCREEN_CATCH") {
                     if (botoId === 3) {
-                        gameState = "MINIGAME_CATCH";
-                        catchScore = 0;
-                        catchLives = 3;
-                        fallingBananas = [];
-                        startTimeCatch = 0;
-                        lastBananaSpawn = 0;
-                        catchTotalSpawned = 0;
-                        sound2.triggerAttack('C4');
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                            endlessModeActive = false;
+                        } else {
+                            gameState = "MINIGAME_CATCH";
+                            catchScore = 0;
+                            catchLives = 3;
+                            fallingBananas = [];
+                            startTimeCatch = 0;
+                            lastBananaSpawn = 0;
+                            catchTotalSpawned = 0;
+                            // Keep endlessModeActive flag for continuous retry
+                        }
                     }
                     // --- MINIGAME 2: PALM TREES ---
                 } else if (gameState === "MINIGAME_PALMTREES") {
                     if (!palmDisabled[botoId]) {
+                        if (palmSound) {
+                            palmSound.start();
+                        }
                         palmHits[botoId]++;
                         palmShaking[botoId] = true;
                         palmShakeTimer[botoId] = millis();
-                        sound2.triggerAttack('C4');
 
                         if (palmHits[botoId] >= 5 && !palmDropped[botoId]) {
                             palmDropped[botoId] = true;
@@ -1104,8 +1603,11 @@
                     }
                 } else if (gameState === "WIN_SCREEN_PALMTREES") {
                     if (botoId === 3) {
-                        gameState = "INTRO_CATCH";
-                        sound2.triggerAttack('C4');
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                        } else {
+                            gameState = "INTRO_CATCH";
+                        }
                     }
                 } else if (gameState === "INTRO_CATCH") {
                     if (botoId === 3) {
@@ -1116,16 +1618,17 @@
                         startTimeCatch = 0;
                         lastBananaSpawn = 0;
                         catchTotalSpawned = 0;
-                        sound2.triggerAttack('C4');
                     }
                     // --- MINIGAME 3: PEELING ---
                 } else if (gameState === "MINIGAME_PEELING") {
                     if (botoId === targetSequence[currentSequenceIndex]) {
+                        if (cintaSound) {
+                            cintaSound.start();
+                        }
                         currentSequenceIndex++;
                         peelPhase = currentSequenceIndex;
                         isBouncing = true;
                         bounceTimer = millis();
-                        sound2.triggerAttack('C4');
 
                         if (currentSequenceIndex >= targetSequence.length) {
                             currentSequenceIndex = 0;
@@ -1149,8 +1652,11 @@
                     }
                 } else if (gameState === "WIN_SCREEN_PEELING") {
                     if (botoId === 3) {
-                        gameState = "INTRO_SEQUENCE";
-                        sound2.triggerAttack('C4');
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                        } else {
+                            gameState = "INTRO_SEQUENCE";
+                        }
                     }
                 } else if (gameState === "INTRO_SEQUENCE") {
                     if (botoId === 3) {
@@ -1159,19 +1665,20 @@
                         mg5AnimationPlaying = false;
                         mg5CurrentAnimFrame = 0;
                         mg5ShotFired = false;
-                        sound2.triggerAttack('C4');
                     }
                 } else if (gameState === "LOSE_SCREEN_PEELING") {
                     if (botoId === 3) {
-                        gameState = "MINIGAME_PEELING";
-                        peeledBananas = 0;
-                        peelPhase = 0;
-                        currentSequenceIndex = 0;
-                        startTime = millis();
-                        sound2.triggerAttack('C4');
+                        if (minigameHubMode) {
+                            enterSelectionHub();
+                        } else {
+                            gameState = "INTRO_PEELING";
+                        }
                     }
                 } else if (gameState === "MINIGAME_SEQUENCE") {
                     if (!mg5AnimationPlaying && botoId === mg5ActiveButton) {
+                        if (comerSound) {
+                            comerSound.start();
+                        }
                         mg5AnimationPlaying = true;
                         mg5CurrentAnimFrame = 0;
                         mg5LastFrameTime = millis();
@@ -1181,9 +1688,7 @@
                     }
                 } else if (gameState === "WIN_SCREEN") {
                     if (botoId === 3) {
-                        // Tornar a l'inici
-                        gameState = "INTRO_PLANTS";
-                        sound2.triggerAttack('C4');
+                        enterSelectionHub();
                     }
                 }
             } catch (e) {

@@ -155,6 +155,15 @@
         let explanationSprites = []; // explanation animation
         let maxTime = 12000; // 6 stages x 2 seconds = 12 seconds
 
+        // --- MINIGAME 5: SEQUENCE ---
+        let mg5Sprites = [[], [], [], []];
+        let mg5ActiveButton = 0;
+        let mg5AnimationPlaying = false;
+        let mg5CurrentAnimFrame = 0;
+        let mg5LastFrameTime = 0;
+        let mg5ShotFired = false;
+        let tiroSound;
+
         // --- ARDUINO DATA ---
         let faders = [512, 0, 512, 0, 0]; // F1:Filter, F2:Palette, F3:Scale, F4:Reverb, F5:Thickness
         let buttons = [0, 0, 0, 0];
@@ -196,6 +205,8 @@
             // Generate Reverb IR
             masterReverb.generate();
 
+            tiroSound = new Tone.Player("media/tiro.mp3").toDestination();
+
             // Setup 4 distinct sounds for the 4 buttons routing to Reverb
             // Sound 0: Deep Kick
             sound0 = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 6, envelope: { attack: 0.001, decay: 0.25, sustain: 0, release: 0.1 } }).connect(masterReverb);
@@ -228,7 +239,7 @@
                 startScreen.style.display = 'none';
                 if (footer) footer.classList.add('footer--hidden');
                 experienciaIniciada = true;
-                gameState = "MINIGAME_PLANTS";
+                gameState = "INTRO_PLANTS";
                 statusText.innerText = "Arduino Connected";
                 loop();
 
@@ -327,7 +338,7 @@
                 loadImage('media/Minigame2/5.4.png')
             ];
 
-            // Minigame 2.5: Catch
+            // Minigame 3: Catch
             handSprites = [
                 loadImage('media/Minigame2.5/1.1.png'),
                 loadImage('media/Minigame2.5/1.2.png')
@@ -339,7 +350,7 @@
                 loadImage('media/Minigame2.5/2.4.png')
             ];
 
-            // Minigame 3: Peeling
+            // Minigame 4: Peeling 
             peelSprites = [
                 [loadImage('media/game3/1.1.png'), loadImage('media/game3/1.1.png')],
                 [loadImage('media/game3/2.1.png'), loadImage('media/game3/2.2.png')],
@@ -393,6 +404,14 @@
                 loadImage('media/Explanation/5.png'),
                 loadImage('media/Explanation/6.png')
             ];
+
+            // Minigame 5: Sequence
+            for (let i = 1; i <= 15; i++) {
+                mg5Sprites[0].push(loadImage(`media/Minigame5/banana1/1.${i}.png`));
+                mg5Sprites[1].push(loadImage(`media/Minigame5/banana2/24-${i}.png`));
+                mg5Sprites[2].push(loadImage(`media/Minigame5/banana3/34-${i}.png`));
+                mg5Sprites[3].push(loadImage(`media/Minigame5/banana4/44-${i}.png`));
+            }
         }
 
         function setup() {
@@ -418,9 +437,77 @@
             }
 
             // ============================
-            // MINIGAME 1: PLANTS
+            // INTRO SCREENS
             // ============================
-            if (gameState === "MINIGAME_PLANTS") {
+            if (gameState === "INTRO_PLANTS") {
+                background('#FFDF99');
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                textStyle(BOLD);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("Minijoc 1: Descobrir el Mono", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Mou els 4 faders fins a dalt de tot!", width / 2, height / 2 + 50);
+                textSize(24);
+                text("Prem el Botó 4 per començar", width / 2, height / 2 + 150);
+
+            } else if (gameState === "INTRO_PALMTREES") {
+                background('#FFDF99');
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                textStyle(BOLD);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("Minijoc 2: Recol·lecció de Plàtans", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Colpeja les 4 palmeres prement els Botons 1, 2, 3 i 4\n(5 cops cadascun)", width / 2, height / 2 + 50);
+                textSize(24);
+                text("Prem el Botó 4 per començar", width / 2, height / 2 + 150);
+
+            } else if (gameState === "INTRO_CATCH") {
+                background('#FFDF99');
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                textStyle(BOLD);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("Minijoc 3: Atrapa Plàtans", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Mou la mà amb el Fader 1 i tanca-la\namb el Botó 1 per atrapar-los!", width / 2, height / 2 + 50);
+                textSize(24);
+                text("Prem el Botó 4 per començar", width / 2, height / 2 + 150);
+
+            } else if (gameState === "INTRO_PEELING") {
+                background('#FFDF99');
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                textStyle(BOLD);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("Minijoc 4: Pelar Plàtans", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Prem els Botons 1, 2 i 3 en l'ordre correcte\nrepetidament abans no s'acabi el temps!", width / 2, height / 2 + 50);
+                textSize(24);
+                text("Prem el Botó 4 per començar", width / 2, height / 2 + 150);
+
+            } else if (gameState === "INTRO_SEQUENCE") {
+                background('#FFDF99');
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                textStyle(BOLD);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("Minijoc 5: Seqüència Final", width / 2, height / 2 - 50);
+                textSize(32);
+                text("Activa els botons un per un (1 -> 2 -> 3 -> 4)\nper veure l'animació", width / 2, height / 2 + 50);
+                textSize(24);
+                text("Prem el Botó 4 per començar", width / 2, height / 2 + 150);
+
+                // ============================
+                // MINIGAME 1: PLANTS
+                // ============================
+            } else if (gameState === "MINIGAME_PLANTS") {
                 if (startTimePlants === 0) startTimePlants = millis();
 
                 let timeElapsed = millis() - startTimePlants;
@@ -466,11 +553,13 @@
                 noStroke();
                 textAlign(CENTER, TOP);
                 textSize(28);
+                textStyle(BOLD);
                 text("Mou els faders per descobrir el mono!", width / 2, 30);
 
                 if (plantsWinReady) {
                     textAlign(CENTER, BOTTOM);
                     textSize(24);
+                    textStyle(BOLD);
                     text("Prem el Botó 1 per continuar!", width / 2, height - 30);
                 }
 
@@ -486,8 +575,10 @@
                 noStroke();
                 textAlign(CENTER, CENTER);
                 textSize(48);
+                textStyle(BOLD);
                 text("TEMPS ESGOTAT!", width / 2, height / 2 - 50);
                 textSize(24);
+                textStyle(BOLD);
                 text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 50);
 
             } else if (gameState === "WIN_SCREEN_PLANTS") {
@@ -499,12 +590,14 @@
                 noStroke();
                 textAlign(CENTER, CENTER);
                 textSize(48);
+                textStyle(BOLD);
                 text("MONO DESCOBERT!", width / 2, height / 2 - 50);
                 textSize(24);
+                textStyle(BOLD);
                 text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
 
                 // ============================
-                // MINIGAME 2.5: CATCH
+                // MINIGAME 3: CATCH
                 // ============================
             } else if (gameState === "MINIGAME_CATCH") {
                 background('#FFDF99');
@@ -625,6 +718,7 @@
                 noStroke();
                 textAlign(RIGHT, TOP);
                 textSize(28);
+                textStyle(BOLD);
                 text("Vides: " + catchLives, width - 30, 30);
 
             } else if (gameState === "WIN_SCREEN_CATCH") {
@@ -633,8 +727,10 @@
                 noStroke();
                 textAlign(CENTER, CENTER);
                 textSize(48);
+                textStyle(BOLD);
                 text("PLÀTANS ATRAPATS!", width / 2, height / 2 - 50);
                 textSize(24);
+                textStyle(BOLD)
                 text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
 
             } else if (gameState === "LOSE_SCREEN_CATCH") {
@@ -643,8 +739,10 @@
                 noStroke();
                 textAlign(CENTER, CENTER);
                 textSize(48);
+                textStyle(BOLD);
                 text("HAS PERDUT!", width / 2, height / 2 - 50);
                 textSize(24);
+                textStyle(BOLD);
                 text("Atrapats: " + catchScore + "/" + catchTargetScore, width / 2, height / 2 + 20);
                 text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 60);
 
@@ -719,11 +817,13 @@
                 noStroke();
                 textAlign(CENTER, TOP);
                 textSize(28);
+                textStyle(BOLD);
                 text("Pica les palmeres! (5 cops cadascuna)", width / 2, 30);
 
                 // Banana counter
                 textAlign(CENTER, BOTTOM);
                 textSize(24);
+                textStyle(BOLD);
                 text("Plàtans: " + palmBananasCollected + " / 4", width / 2, height - 30);
 
                 // Button labels below each palm
@@ -750,12 +850,14 @@
                 noStroke();
                 textAlign(CENTER, CENTER);
                 textSize(48);
+                textStyle(BOLD);
                 text("PLÀTANS RECOLLITS!", width / 2, height / 2 - 50);
                 textSize(24);
+                textStyle(BOLD);
                 text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 50);
 
                 // ============================
-                // MINIGAME 3: PEELING
+                // MINIGAME 4: PEELING
                 // ============================
             } else if (gameState === "MINIGAME_PEELING") {
                 background('#FFDF99'); // --color-groc-bananap
@@ -765,14 +867,14 @@
                 let timeLeft = max(0, maxTime - timeElapsed);
 
                 if (timeLeft === 0) {
-                    gameState = "LOSE_SCREEN";
+                    gameState = "LOSE_SCREEN_PEELING";
                     endTime = millis();
                 }
 
                 imageMode(CENTER);
                 let currentSprite = peelSprites[peelPhase][currentFrame];
                 if (currentSprite) {
-                    image(currentSprite, width / 2, height / 2, currentSprite.width * 0.2, currentSprite.height * 0.2);
+                    image(currentSprite, width / 2, height / 2 - 50, currentSprite.width * 0.2, currentSprite.height * 0.2);
                 }
 
                 // Draw countdown sprite at bottom center
@@ -782,47 +884,119 @@
                 let cdSprite = countdownSprites[countdownStage][countdownFrame];
                 if (cdSprite) {
                     imageMode(CENTER);
-                    image(cdSprite, width / 2, height - 80, cdSprite.width * 0.25, cdSprite.height * 0.25);
+                    image(cdSprite, width / 2, height - 130, cdSprite.width * 0.25, cdSprite.height * 0.25);
                 }
 
                 // Draw explanation animation on the right
                 let expIdx = floor((millis() / 400) % 6);
                 if (explanationSprites[expIdx]) {
                     imageMode(CENTER);
-                    image(explanationSprites[expIdx], width - 200, height / 2, explanationSprites[expIdx].width * 0.1, explanationSprites[expIdx].height * 0.1);
+                    image(explanationSprites[expIdx], width - 200, height / 2 - 50, explanationSprites[expIdx].width * 0.1, explanationSprites[expIdx].height * 0.1);
                 }
 
-            } else if (gameState === "WIN_SCREEN") {
-                background('#FFDF99'); // --color-groc-bananap
+            } else if (gameState === "WIN_SCREEN_PEELING") {
+                background('#FFDF99');
                 textAlign(CENTER, CENTER);
                 textSize(64);
+                textStyle(BOLD);
                 fill('rgba(120, 63, 4, 1)');
                 noStroke();
-                text("YOU WIN!", width / 2, height / 2 - 50);
+                text("PLÀTANS PELATS!", width / 2, height / 2 - 50);
                 textSize(32);
-                text("Time: " + ((endTime - startTime) / 1000).toFixed(2) + "s", width / 2, height / 2 + 50);
-                text("Press Button 4 to restart", width / 2, height / 2 + 100);
-            } else if (gameState === "LOSE_SCREEN") {
-                background('#FFDF99'); // --color-groc-bananap
-                // Draw explosion animation at bottom center
+                textStyle(BOLD);
+                text("Temps: " + ((endTime - startTime) / 1000).toFixed(2) + "s", width / 2, height / 2 + 50);
+                text("Prem el Botó 4 per al següent minijoc", width / 2, height / 2 + 100);
+            } else if (gameState === "LOSE_SCREEN_PEELING") {
+                background('#FFDF99');
                 let expFrame = floor((millis() / 200) % 4);
                 if (expSprites[expFrame]) {
                     imageMode(CENTER);
-                    image(expSprites[expFrame], width / 2, height - 80, expSprites[expFrame].width * 0.25, expSprites[expFrame].height * 0.25);
+                    image(expSprites[expFrame], width / 2, height - 130, expSprites[expFrame].width * 0.25, expSprites[expFrame].height * 0.25);
                 }
 
                 textAlign(CENTER, CENTER);
                 textSize(64);
+                textStyle(BOLD);
                 fill('rgba(120, 63, 4, 1)');
                 noStroke();
-                text("YOU LOSE!", width / 2, height / 2 - 50);
+                text("HAS PERDUT!", width / 2, height / 2 - 50);
                 textSize(32);
-                text("Time's up! Bananas peeled: " + peeledBananas, width / 2, height / 2 + 50);
-                text("Press Button 4 to restart", width / 2, height / 2 + 100);
+                textStyle(BOLD);
+                text("S'ha acabat el temps! Plàtans pelats: " + peeledBananas, width / 2, height / 2 + 50);
+                text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 100);
+
+                // ============================
+                // MINIGAME 5: SEQUENCE
+                // ============================
+            } else if (gameState === "MINIGAME_SEQUENCE") {
+                background('#FFDF99');
+
+                imageMode(CENTER);
+                let scaleBanana = 0.2;
+                if (mg5AnimationPlaying) {
+                    let elapsed = millis() - mg5LastFrameTime;
+                    if (elapsed > 80) { // approx 12.5 fps
+                        mg5CurrentAnimFrame++;
+                        mg5LastFrameTime = millis();
+                    }
+
+                    if (mg5CurrentAnimFrame === 13 && !mg5ShotFired) {
+                        if (tiroSound && tiroSound.loaded) {
+                            tiroSound.start();
+                        }
+                        mg5ShotFired = true;
+                    }
+
+                    if (mg5CurrentAnimFrame >= 15) {
+                        mg5AnimationPlaying = false;
+                        mg5CurrentAnimFrame = 0;
+                        mg5ActiveButton++;
+                        if (mg5ActiveButton > 3) {
+                            setTimeout(() => {
+                                if (gameState === "MINIGAME_SEQUENCE" && mg5ActiveButton > 3) {
+                                    gameState = "WIN_SCREEN";
+                                }
+                            }, 3000);
+                        }
+                    }
+                }
+
+                if (mg5AnimationPlaying) {
+                    let spr = mg5Sprites[mg5ActiveButton][mg5CurrentAnimFrame];
+                    if (spr) {
+                        image(spr, width / 2, height / 2 - 50, spr.width * scaleBanana, spr.height * scaleBanana);
+                    }
+                } else {
+                    if (mg5ActiveButton < 4) {
+                        let spr = mg5Sprites[mg5ActiveButton][0];
+                        if (spr) {
+                            image(spr, width / 2, height / 2 - 50, spr.width * scaleBanana, spr.height * scaleBanana);
+                        }
+                    } else {
+                        let spr = mg5Sprites[3][14];
+                        if (spr) {
+                            image(spr, width / 2, height / 2 - 50, spr.width * scaleBanana, spr.height * scaleBanana);
+                        }
+                    }
+                }
+
+
+            } else if (gameState === "WIN_SCREEN") {
+                background('#FFDF99');
+                textAlign(CENTER, CENTER);
+                textSize(64);
+                textStyle(BOLD);
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                text("VICTÒRIA FINAL!", width / 2, height / 2 - 50);
+                textSize(32);
+                textStyle(BOLD);
+                text("Gràcies per jugar a BANANAP!", width / 2, height / 2 + 50);
+                text("Prem el Botó 4 per tornar a l'inici", width / 2, height / 2 + 100);
             }
 
             // Dibuixar el comptador només al segon minijoc (no a la lose screen)
-            if (gameState === "MINIGAME_PEELING" || gameState === "WIN_SCREEN") {
+            if (gameState === "MINIGAME_PEELING" || gameState === "WIN_SCREEN_PEELING") {
                 let counterFrame = currentFrame;
                 if (peeledBananas >= 4) {
                     counterFrame = floor((millis() / 150) % 4);
@@ -833,7 +1007,7 @@
                     imageMode(CENTER);
                     let w = currentCounter.width * 0.08;
                     let h = currentCounter.height * 0.08;
-                    image(currentCounter, 20 + w / 2, height / 2, w, h);
+                    image(currentCounter, 20 + w / 2, height / 2 - 50, w, h);
                 }
             }
 
@@ -846,7 +1020,14 @@
         function dispararEfecte(botoId) {
             try {
                 // --- MINIGAME 1: PLANTS ---
-                if (gameState === "MINIGAME_PLANTS") {
+                if (gameState === "INTRO_PLANTS") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_PLANTS";
+                        startTimePlants = 0;
+                        plantsWinReady = false;
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "MINIGAME_PLANTS") {
                     if (botoId === 0 && plantsWinReady) {
                         gameState = "WIN_SCREEN_PLANTS";
                         sound3.triggerAttackRelease('A5', '16n');
@@ -859,6 +1040,11 @@
                         sound2.triggerAttack('C4');
                     }
                 } else if (gameState === "WIN_SCREEN_PLANTS") {
+                    if (botoId === 3) {
+                        gameState = "INTRO_PALMTREES";
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "INTRO_PALMTREES") {
                     if (botoId === 3) {
                         gameState = "MINIGAME_PALMTREES";
                         palmHits = [0, 0, 0, 0];
@@ -918,6 +1104,11 @@
                     }
                 } else if (gameState === "WIN_SCREEN_PALMTREES") {
                     if (botoId === 3) {
+                        gameState = "INTRO_CATCH";
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "INTRO_CATCH") {
+                    if (botoId === 3) {
                         gameState = "MINIGAME_CATCH";
                         catchScore = 0;
                         catchLives = 3;
@@ -942,7 +1133,7 @@
                             sound3.triggerAttackRelease('A5', '16n');
 
                             if (peeledBananas >= 4) {
-                                gameState = "WIN_SCREEN";
+                                gameState = "WIN_SCREEN_PEELING";
                                 endTime = millis();
                                 sound0.triggerAttackRelease('C1', '8n');
                             } else {
@@ -956,7 +1147,21 @@
                         peelPhase = 0;
                         sound1.triggerAttackRelease('16n');
                     }
-                } else if (gameState === "WIN_SCREEN" || gameState === "LOSE_SCREEN") {
+                } else if (gameState === "WIN_SCREEN_PEELING") {
+                    if (botoId === 3) {
+                        gameState = "INTRO_SEQUENCE";
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "INTRO_SEQUENCE") {
+                    if (botoId === 3) {
+                        gameState = "MINIGAME_SEQUENCE";
+                        mg5ActiveButton = 0;
+                        mg5AnimationPlaying = false;
+                        mg5CurrentAnimFrame = 0;
+                        mg5ShotFired = false;
+                        sound2.triggerAttack('C4');
+                    }
+                } else if (gameState === "LOSE_SCREEN_PEELING") {
                     if (botoId === 3) {
                         gameState = "MINIGAME_PEELING";
                         peeledBananas = 0;
@@ -965,120 +1170,25 @@
                         startTime = millis();
                         sound2.triggerAttack('C4');
                     }
+                } else if (gameState === "MINIGAME_SEQUENCE") {
+                    if (!mg5AnimationPlaying && botoId === mg5ActiveButton) {
+                        mg5AnimationPlaying = true;
+                        mg5CurrentAnimFrame = 0;
+                        mg5LastFrameTime = millis();
+                        mg5ShotFired = false;
+                    } else if (!mg5AnimationPlaying) {
+                        // Feedback d'error eliminat segons petició
+                    }
+                } else if (gameState === "WIN_SCREEN") {
+                    if (botoId === 3) {
+                        // Tornar a l'inici
+                        gameState = "INTRO_PLANTS";
+                        sound2.triggerAttack('C4');
+                    }
                 }
             } catch (e) {
                 console.warn(e);
             }
-        }
-
-        // ---- VISUAL CLASSES ----
-
-        class Ring {
-            constructor(x, y, h, sw, spd) {
-                this.x = x; this.y = y; this.h = h; this.sw = sw; this.r = 0; this.a = 1; this.spd = spd;
-            }
-            update() { this.r += this.spd; this.a -= 0.025; }
-            display(thick) {
-                noFill(); stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(this.sw * thick);
-                ellipse(this.x, this.y, this.r * 2);
-            }
-            isDead() { return this.a <= 0; }
-        }
-
-        class Shrink {
-            constructor(x, y, h, sz) {
-                this.x = x; this.y = y; this.h = h; this.sz = sz; this.a = 0.9;
-            }
-            update() { this.sz -= 4; this.a -= 0.03; }
-            display(thick) {
-                if (this.sz > 0) { noStroke(); fill(this.h, shapeCol[1], shapeCol[2], this.a); ellipse(this.x, this.y, this.sz); }
-            }
-            isDead() { return this.a <= 0 || this.sz <= 0; }
-        }
-
-        class Dot {
-            constructor(x, y, h, sz, spd) {
-                this.h = h; this.sz = sz; this.a = 1;
-                const ang = random(TWO_PI);
-                this.x = x; this.y = y; this.vx = cos(ang) * spd; this.vy = sin(ang) * spd;
-            }
-            update() { this.x += this.vx; this.y += this.vy; this.a -= 0.03; this.vx *= 0.96; this.vy *= 0.96; }
-            display(thick) {
-                noStroke(); fill(this.h, shapeCol[1], shapeCol[2], this.a); ellipse(this.x, this.y, this.sz);
-            }
-            isDead() { return this.a <= 0; }
-        }
-
-        class RadLine {
-            constructor(x, y, h, ang, sw) {
-                this.x = x; this.y = y; this.h = h; this.ang = ang; this.sw = sw; this.len = 0; this.a = 1;
-            }
-            update() { this.len += 10; this.a -= 0.03; }
-            display(thick) {
-                stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(this.sw * thick);
-                const ex = this.x + cos(this.ang) * this.len, ey = this.y + sin(this.ang) * this.len;
-                line(this.x, this.y, ex, ey);
-            }
-            isDead() { return this.a <= 0; }
-        }
-
-        class Diamond {
-            constructor(x, y, h, rot) {
-                this.x = x; this.y = y; this.h = h; this.rot = rot; this.sz = 0; this.a = 1; this.angle = 0;
-            }
-            update() { this.sz += 6; this.a -= 0.025; if (this.rot) this.angle += 0.04; }
-            display(thick) {
-                push(); translate(this.x, this.y); rotate(this.angle);
-                noFill(); stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(8 * thick);
-                const s = this.sz;
-                quad(0, -s, s, 0, 0, s, -s, 0); pop();
-            }
-            isDead() { return this.a <= 0; }
-        }
-
-        class ParBars {
-            constructor(h, vert, count, spacing) {
-                this.h = h; this.vert = vert; this.a = 1; this.bars = [];
-                const mid = vert ? width / 2 : height / 2;
-                for (let i = 0; i < count; i++) {
-                    this.bars.push(mid + (i - floor(count / 2)) * spacing);
-                }
-            }
-            update() { this.a -= 0.03; }
-            display(thick) {
-                stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(10 * thick);
-                for (const pos of this.bars) {
-                    if (this.vert) line(pos, 0, pos, height);
-                    else line(0, pos, width, pos);
-                }
-            }
-            isDead() { return this.a <= 0; }
-        }
-
-        class ZigZag {
-            constructor(h) {
-                this.h = h; this.a = 1; this.progress = 0;
-            }
-            update() { this.progress += 15; this.a -= 0.025; }
-            display(thick) {
-                noFill(); stroke(this.h, shapeCol[1], shapeCol[2], this.a); strokeWeight(10 * thick);
-                beginShape();
-                const amp = 40, freq = 50, cy = height / 2;
-                for (let x = 0; x < min(this.progress, width); x += 5) {
-                    vertex(x, cy + sin(x / freq * TWO_PI) * amp);
-                }
-                endShape();
-            }
-            isDead() { return this.a <= 0; }
-        }
-
-        class Flash {
-            constructor(h, s, b) { this.h = h; this.s = s; this.b = b; this.a = 0.7; }
-            update() { this.a -= 0.07; }
-            display(thick) {
-                noStroke(); fill(this.h, this.s, this.b, this.a); rect(0, 0, width, height);
-            }
-            isDead() { return this.a <= 0; }
         }
 
         function windowResized() { resizeCanvas(windowWidth, windowHeight); }

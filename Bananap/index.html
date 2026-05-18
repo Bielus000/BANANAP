@@ -306,6 +306,10 @@
         connectBtn.addEventListener('click', async () => {
             await connectSerial();
             if (experienciaIniciada) {
+                minigameHubMode = false;
+                selectionHubBuilt = false;
+                lastRenderedUiState = '';
+                uiLayerDirty = true;
                 gameState = "INTRO_PLANTS";
             }
         });

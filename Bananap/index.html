@@ -289,7 +289,9 @@
                 startScreen.style.display = 'none';
                 if (footer) footer.classList.add('footer--hidden');
                 experienciaIniciada = true;
-                gameState = "INTRO_PLANTS";
+                if (gameState !== 'SELECT_MINIGAMES') {
+                    gameState = "INTRO_PLANTS";
+                }
                 statusText.innerText = "Arduino Connected";
                 loop();
 
@@ -819,15 +821,6 @@
             subtitle.textContent = 'Després de la història, juga el minijoc que vulguis i torna aquí cada vegada.';
             content.appendChild(subtitle);
 
-            const connectButton = document.createElement('button');
-            connectButton.type = 'button';
-            connectButton.className = 'banana-select-button';
-            connectButton.style.width = '100%';
-            connectButton.style.margin = '16px 0';
-            connectButton.textContent = "Connecta l'Arduino";
-            connectButton.addEventListener('click', connectSerial);
-            content.appendChild(connectButton);
-
             const grid = document.createElement('div');
             grid.className = 'banana-select-grid';
 
@@ -864,6 +857,18 @@
             logoButton.appendChild(logo);
 
             panels.push(panel);
+
+            const connectShortcut = document.createElement('button');
+            connectShortcut.type = 'button';
+            connectShortcut.className = 'banana-connect-float-button';
+            connectShortcut.textContent = "Connecta l'Arduino";
+            connectShortcut.addEventListener('click', connectSerial);
+            connectShortcut.style.position = 'absolute';
+            connectShortcut.style.left = '50%';
+            connectShortcut.style.transform = 'translateX(-50%)';
+            connectShortcut.style.top = `${Math.round(windowHeight / 2 + 300)}px`;
+            connectShortcut.style.pointerEvents = 'auto';
+            panels.push(connectShortcut);
             panels.push(logoButton);
         }
 

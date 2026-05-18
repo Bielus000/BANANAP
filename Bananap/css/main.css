@@ -634,6 +634,25 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 40px;
 }
+.support-shortcut {
+    margin: 30px 0;
+    text-align: center;
+}
+.support-shortcut-button {
+    display: inline-block;
+    padding: 16px 28px;
+    border: 3px solid var(--color-marro-bananap);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--color-marro-bananap);
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+.support-shortcut-button:hover,
+.support-shortcut-button:focus-visible {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+}
 .support-card {
     background: var(--color-light-nana-bananap);
     padding: 30px;

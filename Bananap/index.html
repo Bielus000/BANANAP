@@ -502,6 +502,17 @@
             textFont('Outfit');
             catchScoreboard = loadCatchScoreboard();
             noLoop();
+
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('hub') === '1') {
+                const startScreenEl = document.getElementById('start-screen');
+                const footerEl = document.querySelector('.footer');
+                if (startScreenEl) startScreenEl.style.display = 'none';
+                if (footerEl) footerEl.classList.add('footer--hidden');
+                experienciaIniciada = true;
+                enterSelectionHub();
+                loop();
+            }
         }
 
         function createPanelShell({ left, top, width, height, className = '' }) {

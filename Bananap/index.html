@@ -819,6 +819,15 @@
             subtitle.textContent = 'Després de la història, juga el minijoc que vulguis i torna aquí cada vegada.';
             content.appendChild(subtitle);
 
+            const connectButton = document.createElement('button');
+            connectButton.type = 'button';
+            connectButton.className = 'banana-select-button';
+            connectButton.style.width = '100%';
+            connectButton.style.margin = '16px 0';
+            connectButton.textContent = "Connecta l'Arduino";
+            connectButton.addEventListener('click', connectSerial);
+            content.appendChild(connectButton);
+
             const grid = document.createElement('div');
             grid.className = 'banana-select-grid';
 

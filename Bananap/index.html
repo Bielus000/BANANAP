@@ -850,7 +850,16 @@
             logoButton.className = 'banana-select-logo-button banana-select-logo-floating';
             logoButton.setAttribute('aria-label', 'Recarregar la pàgina');
             logoButton.style.top = `${Math.round(windowHeight / 2 - 340)}px`;
-            logoButton.addEventListener('click', () => window.location.reload());
+            logoButton.addEventListener('click', () => {
+                // Return to the in-app home/start screen without reloading
+                experienciaIniciada = false;
+                gameState = 'START';
+                if (startScreen) startScreen.style.display = 'flex';
+                if (footer) footer.classList.remove('footer--hidden');
+                if (uiLayer) uiLayer.replaceChildren();
+                selectionHubBuilt = false;
+                try { noLoop(); } catch (e) { /* ignore if not available */ }
+            });
 
             const logo = document.createElement('img');
             logo.className = 'banana-select-logo';

@@ -1425,7 +1425,7 @@
                 if (endlessModeActive) {
                     textAlign(LEFT, TOP);
                     textSize(24);
-                    text("Dificultad: " + difficultyMultiplier.toFixed(2) + "x", 30, 30);
+                    text("Dificultat: " + difficultyMultiplier.toFixed(2) + "x", 30, 30);
                 }
 
             } else if (gameState === "WIN_SCREEN_CATCH") {
@@ -1463,13 +1463,8 @@
                 fill('rgba(120, 63, 4, 1)');
                 noStroke();
                 textAlign(CENTER, CENTER);
-                textSize(48);
-                textStyle(BOLD);
-                text("SCOREBOARD ENDLESS", width / 2, 90);
-                textSize(20);
-                textStyle(BOLD);
-                text("Prem el Botó 4 per tornar a la selecció", width / 2, 135);
 
+                // Scoreboard panel is rendered as DOM content; no duplicate canvas text here.
                 // ============================
                 // MINIGAME 2: PALM TREES
                 // ============================

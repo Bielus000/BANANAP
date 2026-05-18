@@ -162,6 +162,11 @@
         let explanationSprites5 = []; // explanation animation for minigame 5
         let logoAnimSprites = []; // Logo animation images
         let maxTime = 12000; // 6 stages x 2 seconds = 12 seconds
+        let catchScoreboard = [];
+        let uiLayerDirty = true;
+        let lastRenderedUiState = '';
+
+        const catchScoreboardStorageKey = 'bananap-catch-scoreboard';
 
         const uiLayer = document.getElementById('ui-layer');
 
@@ -495,6 +500,7 @@
             bgCol = [...palettes[0].bg];
             shapeCol = [...palettes[0].fg];
             textFont('Outfit');
+            catchScoreboard = loadCatchScoreboard();
             noLoop();
         }
 
@@ -570,6 +576,213 @@
             content.appendChild(single);
 
             panels.push(panel);
+        }
+
+        function appendCustomPanel(panels, config, buildContent) {
+            const { panel, content } = createPanelShell(config);
+            buildContent(content, panel);
+            panels.push(panel);
+        }
+
+        function loadCatchScoreboard() {
+            try {
+                const raw = localStorage.getItem(catchScoreboardStorageKey);
+                const parsed = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(parsed)) {
+                    return [];
+                }
+                return parsed
+                    .filter((entry) => entry && typeof entry === 'object')
+                    .map((entry) => ({
+                        name: String(entry.name || 'ANON').slice(0, 18),
+                        score: Number(entry.score) || 0,
+                        time: Number(entry.time) || Date.now()
+                    }))
+                    .sort((a, b) => b.score - a.score || b.time - a.time)
+                    .slice(0, 10);
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function saveCatchScoreboard(entries) {
+            try {
+                localStorage.setItem(catchScoreboardStorageKey, JSON.stringify(entries));
+            } catch (error) {
+                console.error('No s\'ha pogut desar la scoreboard:', error);
+            }
+        }
+
+        function addCatchScoreEntry(name, score) {
+            const safeName = (name || 'ANON').trim().slice(0, 18) || 'ANON';
+            catchScoreboard = loadCatchScoreboard();
+            catchScoreboard.push({
+                name: safeName,
+                score: Number(score) || 0,
+                time: Date.now()
+            });
+            catchScoreboard = catchScoreboard
+                .sort((a, b) => b.score - a.score || b.time - a.time)
+                .slice(0, 10);
+            saveCatchScoreboard(catchScoreboard);
+        }
+
+        function clearCatchScoreboard() {
+            catchScoreboard = [];
+            saveCatchScoreboard(catchScoreboard);
+        }
+
+        function markUiDirty() {
+            uiLayerDirty = true;
+        }
+
+        function appendCatchSubmitPanel(panels) {
+            appendCustomPanel(panels, {
+                left: Math.round(windowWidth / 2 - 430),
+                top: Math.round(windowHeight / 2 - 210),
+                width: 860,
+                height: 420,
+                className: 'banana-panel--select'
+            }, (content) => {
+                const title = document.createElement('p');
+                title.className = 'banana-panel__title';
+                title.textContent = 'ENDLESS OVER';
+                content.appendChild(title);
+
+                const divider = document.createElement('div');
+                divider.className = 'banana-panel__divider';
+                content.appendChild(divider);
+
+                const body = document.createElement('p');
+                body.className = 'banana-panel__body';
+                body.textContent = `Plàtans capturats: ${catchScore}. Escriu el teu nom i envia el resultat.`;
+                content.appendChild(body);
+
+                const form = document.createElement('div');
+                form.className = 'banana-score-form';
+
+                const input = document.createElement('input');
+                input.id = 'catch-score-name-input';
+                input.className = 'banana-score-input';
+                input.type = 'text';
+                input.maxLength = 18;
+                input.placeholder = 'El teu nom';
+                input.autocomplete = 'off';
+                input.spellcheck = false;
+
+                const submitButton = document.createElement('button');
+                submitButton.type = 'button';
+                submitButton.className = 'banana-score-action-button';
+                submitButton.textContent = 'Enviar a la scoreboard';
+
+                const status = document.createElement('p');
+                status.id = 'catch-score-submit-status';
+                status.className = 'banana-score-status';
+                status.textContent = 'Prem el Botó 3 per obrir la scoreboard.';
+
+                const submitResult = () => {
+                    const rawName = input.value.trim();
+                    addCatchScoreEntry(rawName || 'ANON', catchScore);
+                    status.textContent = 'Resultat guardat.';
+                };
+
+                submitButton.addEventListener('click', submitResult);
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        submitResult();
+                    }
+                });
+
+                setTimeout(() => input.focus(), 0);
+
+                form.appendChild(input);
+                form.appendChild(submitButton);
+                content.appendChild(form);
+                content.appendChild(status);
+            });
+        }
+
+        function appendCatchScoreboardPanel(panels) {
+            appendCustomPanel(panels, {
+                left: Math.round(windowWidth / 2 - 460),
+                top: Math.round(windowHeight / 2 - 230),
+                width: 920,
+                height: 500,
+                className: 'banana-panel--select'
+            }, (content) => {
+                const title = document.createElement('p');
+                title.className = 'banana-panel__title';
+                title.textContent = 'SCOREBOARD ENDLESS';
+                content.appendChild(title);
+
+                const divider = document.createElement('div');
+                divider.className = 'banana-panel__divider';
+                content.appendChild(divider);
+
+                const subtitle = document.createElement('p');
+                subtitle.className = 'banana-panel__body';
+                subtitle.textContent = 'Prem el Botó 4 per tornar a la selecció. El botó de sota esborra la scoreboard.';
+                content.appendChild(subtitle);
+
+                const list = document.createElement('div');
+                list.className = 'banana-scoreboard-list';
+
+                if (catchScoreboard.length === 0) {
+                    const empty = document.createElement('p');
+                    empty.className = 'banana-scoreboard-empty';
+                    empty.textContent = 'Encara no hi ha resultats.';
+                    list.appendChild(empty);
+                } else {
+                    catchScoreboard.forEach((entry, index) => {
+                        const row = document.createElement('div');
+                        row.className = 'banana-scoreboard-row';
+
+                        const rank = document.createElement('span');
+                        rank.className = 'banana-scoreboard-rank';
+                        rank.textContent = `${index + 1}.`;
+
+                        const name = document.createElement('span');
+                        name.className = 'banana-scoreboard-name';
+                        name.textContent = entry.name;
+
+                        const score = document.createElement('span');
+                        score.className = 'banana-scoreboard-score';
+                        score.textContent = String(entry.score);
+
+                        row.appendChild(rank);
+                        row.appendChild(name);
+                        row.appendChild(score);
+                        list.appendChild(row);
+                    });
+                }
+
+                content.appendChild(list);
+
+                const actions = document.createElement('div');
+                actions.className = 'banana-score-actions';
+
+                const resetButton = document.createElement('button');
+                resetButton.type = 'button';
+                resetButton.className = 'banana-score-action-button';
+                resetButton.textContent = 'Reiniciar scoreboard';
+                resetButton.addEventListener('click', () => {
+                    clearCatchScoreboard();
+                    markUiDirty();
+                });
+
+                const backButton = document.createElement('button');
+                backButton.type = 'button';
+                backButton.className = 'banana-score-action-button';
+                backButton.textContent = 'Tornar a la selecció';
+                backButton.addEventListener('click', () => {
+                    enterSelectionHub();
+                });
+
+                actions.appendChild(resetButton);
+                actions.appendChild(backButton);
+                content.appendChild(actions);
+            });
         }
 
         function appendSelectionPanel(panels) {
@@ -688,12 +901,18 @@
             }
 
             if (gameState === 'SELECT_MINIGAMES') {
-                if (!selectionHubBuilt) {
+                if (!selectionHubBuilt || uiLayerDirty || lastRenderedUiState !== gameState) {
                     const panels = [];
                     appendSelectionPanel(panels);
                     uiLayer.replaceChildren(...panels);
                     selectionHubBuilt = true;
+                    uiLayerDirty = false;
+                    lastRenderedUiState = gameState;
                 }
+                return;
+            }
+
+            if (lastRenderedUiState === gameState && !uiLayerDirty) {
                 return;
             }
 
@@ -785,16 +1004,22 @@
                     secondary: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per al següent minijoc'
                 });
             } else if (gameState === 'LOSE_SCREEN_CATCH') {
-                appendStackPanel(panels, {
-                    left: Math.round(windowWidth / 2 - 410),
-                    top: Math.round(windowHeight / 2 - 190),
-                    width: 820,
-                    height: 360,
-                    title: 'HAS PERDUT!',
-                    divider: true,
-                    secondary: endlessModeActive ? `Plàtans atrapats: ${catchScore}` : `Atrapats: ${catchScore}/${catchTargetScore}`,
-                    body: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per tornar a intentar-ho'
-                });
+                if (endlessModeActive) {
+                    appendCatchSubmitPanel(panels);
+                } else {
+                    appendStackPanel(panels, {
+                        left: Math.round(windowWidth / 2 - 410),
+                        top: Math.round(windowHeight / 2 - 190),
+                        width: 820,
+                        height: 360,
+                        title: 'HAS PERDUT!',
+                        divider: true,
+                        secondary: `Atrapats: ${catchScore}/${catchTargetScore}`,
+                        body: minigameHubMode ? 'Prem el Botó 4 per tornar a la selecció' : 'Prem el Botó 4 per tornar a intentar-ho'
+                    });
+                }
+            } else if (gameState === 'SCOREBOARD_CATCH') {
+                appendCatchScoreboardPanel(panels);
             } else if (gameState === 'WIN_SCREEN_PALMTREES') {
                 appendStackPanel(panels, {
                     left: Math.round(windowWidth / 2 - 390),
@@ -841,6 +1066,8 @@
             }
 
             uiLayer.replaceChildren(...panels);
+            uiLayerDirty = false;
+            lastRenderedUiState = gameState;
         }
 
         function draw() {
@@ -964,6 +1191,7 @@
 
                 imageMode(CENTER);
                 if (imgMono) {
+                            endlessModeActive = false; // Ensure endless mode is disabled when starting the minigame
                     image(imgMono, width / 2, height / 2, imgMono.width * 0.15, imgMono.height * 0.15);
                 }
 
@@ -1158,7 +1386,6 @@
                     gameState = "WIN_SCREEN_CATCH";
                 } else if (catchLives <= 0) {
                     gameState = "LOSE_SCREEN_CATCH";
-                    endlessModeActive = false; // Exit endless mode on lose
                 }
 
                 // Draw score/counter
@@ -1225,10 +1452,23 @@
                 textStyle(BOLD);
                 if (endlessModeActive) {
                     text("Plàtans atrapats: " + catchScore, width / 2, height / 2 + 20);
+                    text("Prem el Botó 3 per obrir la scoreboard", width / 2, height / 2 + 60);
                 } else {
                     text("Atrapats: " + catchScore + "/" + catchTargetScore, width / 2, height / 2 + 20);
+                    text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 60);
                 }
-                text("Prem el Botó 4 per tornar a intentar-ho", width / 2, height / 2 + 60);
+
+            } else if (gameState === "SCOREBOARD_CATCH") {
+                background('#FFDF99');
+                fill('rgba(120, 63, 4, 1)');
+                noStroke();
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                textStyle(BOLD);
+                text("SCOREBOARD ENDLESS", width / 2, 90);
+                textSize(20);
+                textStyle(BOLD);
+                text("Prem el Botó 4 per tornar a la selecció", width / 2, 135);
 
                 // ============================
                 // MINIGAME 2: PALM TREES
@@ -1559,7 +1799,9 @@
                         startTime = 0;
                     }
                 } else if (gameState === "LOSE_SCREEN_CATCH") {
-                    if (botoId === 3) {
+                    if (endlessModeActive && botoId === 2) {
+                        gameState = "SCOREBOARD_CATCH";
+                    } else if (botoId === 3) {
                         if (minigameHubMode) {
                             enterSelectionHub();
                             endlessModeActive = false;
@@ -1573,6 +1815,11 @@
                             catchTotalSpawned = 0;
                             // Keep endlessModeActive flag for continuous retry
                         }
+                    }
+                } else if (gameState === "SCOREBOARD_CATCH") {
+                    if (botoId === 3) {
+                        enterSelectionHub();
+                        endlessModeActive = false;
                     }
                     // --- MINIGAME 2: PALM TREES ---
                 } else if (gameState === "MINIGAME_PALMTREES") {

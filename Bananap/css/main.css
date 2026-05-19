@@ -7,6 +7,7 @@
     --color-light-nana-bananap: rgba(255, 237, 197, 1);
 }
 
+/* Capa superior para paneles y overlays montados desde JavaScript. */
 .ui-layer {
     position: fixed;
     inset: 0;
@@ -14,6 +15,7 @@
     pointer-events: none;
 }
 
+/* Estilo base de los paneles de experiencia y menús emergentes. */
 .banana-panel {
     position: absolute;
     overflow: hidden;
@@ -40,6 +42,7 @@
     pointer-events: none;
 }
 
+/* Contenido interno compartido por todos los paneles. */
 .banana-panel__content {
     position: relative;
     z-index: 1;
@@ -119,6 +122,7 @@
     font-weight: 700;
 }
 
+/* Selector de minijuegos y sus botones. */
 .banana-select-grid {
     width: 100%;
     display: grid;
@@ -211,6 +215,7 @@
     background: rgba(255, 223, 153, 0.98);
 }
 
+/* Formulario y scoreboard del modo endless del minijuego de atrapar plátanos. */
 .banana-score-form {
     width: min(100%, 640px);
     display: flex;
@@ -347,6 +352,7 @@
     pointer-events: auto;
 }
 
+/* Tipografía compartida por toda la web. */
 .text-style-body-text {
     font-size: 20px;
     font-family: 'Outfit', sans-serif;
@@ -387,6 +393,7 @@
     box-shadow: inset 0px 2.5px 0px rgba(0, 0, 0, 1), inset 0px 2px 2px rgba(0, 0, 0, 0.750), 0px 1px 1px rgba(0, 0, 0, 0.100);
 }
 
+/* Pantalla inicial y accesos superiores. */
 .start-screen {
     position: fixed;
     inset: 0;
@@ -453,7 +460,7 @@
     display: none;
 }
 
-/* FOOTER */
+/* Footer fijo del sitio principal. */
 .footer {
     position: fixed;
     bottom: 0;
@@ -533,7 +540,7 @@
     }
 }
 
-/* Generics for Subpages */
+/* Estructura común para las páginas secundarias. */
 .page-section {
     max-width: 1000px;
     margin: 120px auto 40px auto;
@@ -554,14 +561,14 @@
     line-height: 1.5;
 }
 
-/* Static footer for scrolling pages */
+/* Footer estático para las páginas con scroll. */
 .static-footer {
     position: relative;
     transform: none;
     padding-top: 100px;
 }
 
-/* Team Grid */
+/* Sección about: equipo del proyecto. */
 .team-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -597,7 +604,7 @@
     opacity: 0.8;
 }
 
-/* Contact Form */
+/* Sección contact: formulario de contacto. */
 .contact-form {
     max-width: 600px;
     margin: 0 auto;
@@ -650,7 +657,7 @@
     background: var(--color-groc-bananap);
 }
 
-/* Support Grid */
+/* Sección suport: tarjetas de ayuda y acceso directo. */
 .support-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

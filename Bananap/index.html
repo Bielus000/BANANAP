@@ -63,16 +63,20 @@
 </head>
 
 <body>
+    <!-- Pantalla inicial: se muestra antes de conectar el Arduino y arrancar el audio. -->
     <div id="start-screen" class="start-screen">
         <img id="start-logo-img" src="media/LOGONANAP.png" alt="Logo BANANAP" class="start-logo">
         <p class="text-style-title-text">Connect Arduino & Pump Up the speakers</p>
         <button id="connect-btn" class="connect-btn text-style-footer-button">Connect Arduino</button>
     </div>
 
+    <!-- Estado visible de la conexión serie con el Arduino. -->
     <div id="connection-status">Not connected</div>
 
+    <!-- Capa DOM donde se montan paneles y menús dinámicos encima del canvas. -->
     <div id="ui-layer" class="ui-layer" aria-hidden="true"></div>
 
+    <!-- Footer fijo con enlaces informativos del proyecto. -->
     <footer class="footer">
         <div class="footer-content">
             <nav class="footer-nav" aria-label="Enllaços de peu de pàgina">
@@ -85,6 +89,7 @@
     </footer>
 
     <script>
+        // Estado global de la experiencia: recursos, minijuegos, audio y comunicación serie.
         let elements = [];
         let experienciaIniciada = false;
         let toneStarted = false;
@@ -221,6 +226,7 @@
         let minigameHubMode = false;
         let selectionHubBuilt = false;
 
+        // Reproduce la música base solo cuando la experiencia ya ha comenzado.
         function syncBackgroundMusic() {
             if (!backgroundMusicReady || !backgroundMusic) {
                 return;
@@ -234,6 +240,7 @@
             }
         }
 
+        // Inicializa los efectos globales de sonido y los samples de la experiencia.
         function setupAudio() {
             // Setup global effects
             masterFilter = new Tone.Filter({ type: "lowpass", frequency: 20000 }).toDestination();
@@ -268,13 +275,13 @@
             sound3 = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 8, envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 }, modulation: { type: 'square' } }).connect(masterReverb);
         }
 
-        // --- DOM ---
+        // Referencias a nodos fijos de la interfaz.
         const startScreen = document.getElementById('start-screen');
         const connectBtn = document.getElementById('connect-btn');
         const footer = document.querySelector('.footer');
         const statusText = document.getElementById('connection-status');
 
-        // --- SERIAL CONNECTION ---
+        // Abre el puerto serie, arranca el audio y prepara la lectura de datos del Arduino.
         async function connectSerial() {
             try {
                 port = await navigator.serial.requestPort();
@@ -314,6 +321,7 @@
             }
         });
 
+        // Lee continuamente el stream serie y separa las líneas completas.
         async function readLoop() {
             while (true) {
                 const { value, done } = await reader.read();
@@ -339,6 +347,7 @@
             }
         }
 
+        // Parsea cada línea JSON del Arduino y actualiza faders y botones.
         function processArduinoData(line) {
             if (!line) return;
 
@@ -374,7 +383,7 @@
             }
         }
 
-        // --- P5 ---
+        // Carga previa de todas las imágenes usadas por los minijuegos.
         function preload() {
             // Minigame 1: Plants
             imgMono = loadImage('media/Minigame1/mono.png');
@@ -502,6 +511,7 @@
             }
         }
 
+        // Configuración inicial de p5: canvas, paleta, fuentes y modo de arranque.
         function setup() {
             createCanvas(windowWidth, windowHeight);
             colorMode(HSB, 360, 100, 100, 1);
@@ -523,6 +533,7 @@
             }
         }
 
+        // Helpers para construir paneles DOM reutilizables sobre la capa UI.
         function createPanelShell({ left, top, width, height, className = '' }) {
             const panel = document.createElement('section');
             panel.className = `banana-panel${className ? ` ${className}` : ''}`;
@@ -603,6 +614,7 @@
             panels.push(panel);
         }
 
+        // Persistencia local de la scoreboard del minijuego endless.
         function loadCatchScoreboard() {
             try {
                 const raw = localStorage.getItem(catchScoreboardStorageKey);
@@ -804,6 +816,7 @@
             });
         }
 
+        // Menú principal para escoger minijuegos desde el hub.
         function appendSelectionPanel(panels) {
             const { panel, content } = createPanelShell({
                 left: Math.round(windowWidth / 2 - 460),
@@ -887,6 +900,7 @@
             panels.push(logoButton);
         }
 
+        // Activa el hub de selección y fuerza un render nuevo de la UI.
         function enterSelectionHub() {
             minigameHubMode = true;
             gameState = 'SELECT_MINIGAMES';
@@ -935,6 +949,7 @@
             }
         }
 
+        // Dibuja o actualiza la interfaz DOM contextual según el estado del juego.
         function renderUiLayer() {
             if (!uiLayer) {
                 return;
@@ -1110,6 +1125,7 @@
             lastRenderedUiState = gameState;
         }
 
+        // Bucle principal de render: pinta minijuegos, pantallas de estado y UI.
         function draw() {
             if (!experienciaIniciada) return;
 
@@ -1773,6 +1789,7 @@
             else footer.classList.add('footer--hidden');
         }
 
+        // Router principal de acciones: decide qué ocurre al pulsar cada botón.
         function dispararEfecte(botoId) {
             try {
                 // --- MINIGAME 1: PLANTS ---
@@ -1978,6 +1995,7 @@
             }
         }
 
+        // Ajusta el canvas cuando cambia el tamaño de la ventana.
         function windowResized() { resizeCanvas(windowWidth, windowHeight); }
     </script>
     <script src="js/main.js"></script>

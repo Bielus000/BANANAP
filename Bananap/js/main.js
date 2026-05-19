@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	const animatedIndices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
+	// El pie de página responde al ratón y al scroll con una deformación suave.
 	window.addEventListener('mousemove', (event) => {
 		const width = window.innerWidth || 1;
 		const height = window.innerHeight || 1;
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		scrollBoost = 1.4;
 	});
 
+	// La animación recalcula el clip-path en cada frame para crear el efecto ondulante.
 	function animateClipPath(time) {
 		mouseBoost *= 0.96;
 		scrollBoost *= 0.92;
